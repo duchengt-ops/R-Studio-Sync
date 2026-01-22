@@ -1,0 +1,205 @@
+---
+title: "STAT 335 - Week 1 Times Series R Practice"
+author: "Ducheng Tan"
+date: "2026-01-13"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#install.packages("astsa")
+library("astsa")
+
+library("xts")
+
+```
+
+```{R}
+Q <- (2^(1/3)*(pi)^(1/2)*exp(-4))/ (log(sin(2.75*pi)+cos(0.4*pi)))
+
+print(Q)
+
+```
+
+
+```{R}
+
+options(width = 40)
+n = 1:10 
+sin(pi/n) 
+
+round(sin(pi/n), 4)
+
+```
+
+
+```{R}
+
+(1:10/5)
+
+(1:10) %% 3 
+
+```
+
+```{R}
+(1:9/10)
+
+(0:8/10)
+
+j = seq(9,1, by = -8)
+(j/10)
+
+
+```
+
+
+```{R}
+
+x <- c(1,2,3)
+y <- c("hello", "string")
+z <- c(TRUE, TRUE,FALSE, TRUE)
+w <- c(1, TRUE , "bob")
+```
+
+```{R}
+(x<-c(1,0,NA))
+
+y < x/0 
+y
+
+
+```
+
+
+```{R}
+
+x <- c(1,2,3,4); 
+y <- c(2,4, 6, 8);
+z <- c(10, 20); 
+w <- c(7, 9, 11)
+
+x+y 
+x+z
+x*z
+x-w
+```
+
+```{R}
+ls()
+#rm("varname")
+data() 
+getwd()
+#setwd("dir")
+
+```
+
+
+```{R}
+
+write(uspop, file="uspop.txt", ncolumns=1)
+
+read.table("uspop.txt")
+scan(file = "uspop.txt")
+```
+
+```{R}
+View("uspop.txt")
+```
+
+```{r}
+#View(swiss)
+
+swiss[1]
+summary(swiss)
+
+write.table(swiss, "swiss.txt", sep=",")
+
+read.table("swiss.txt", header = TRUE, sep=",") 
+
+```
+
+
+```{R}
+
+rnorm(5)
+options(digits=2) 
+x = runif(4) 
+y = runif(4)
+a <- cbind(x,y) 
+
+
+b <- rbind(x,y)
+
+x<-rnorm(10000)
+hist(x) 
+stem(x)
+boxplot(x)
+summary(x)
+
+
+```
+```{r}
+# FUNCTIONS 
+
+options(digits = 4)
+f1 <- function(x,y){x * log(y)}
+
+f1(3,4)
+
+f2 <- function(x,y){ 
+  x^y
+}
+
+f2(36, .5) 
+
+
+```
+
+```{r}
+#install.packages("stats", "astsa")
+library(stats)
+library(astsa)
+
+
+par(mfrow = c(1,1))
+plot.ts(gtemp_land, type = "o")
+tsplot(gtemp_land, type = "o")
+#Type with p, l , b, o works with these two above 
+
+
+plot(gtemp_land)
+ts.plot(gtemp_land)
+```
+
+```{r}
+
+
+
+ts.plot(cmort, tempr, part, col=c("red", "purple", "black"))
+legend("topright", legend=c("M", "T", "P"), lty=6, col=c("red", "purple", "black"))
+
+colors()
+
+```
+
+
+```{r}
+par(mfrow=c(3,1))
+tsplot(cmort,col="red")
+tsplot(tempr,col="green")
+tsplot(part,col="blue")
+
+
+```
+
+
+```{r}
+library(xts)
+library(astsa)
+```
+
+
