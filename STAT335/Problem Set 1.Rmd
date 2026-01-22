@@ -1,0 +1,77 @@
+---
+title: "STAT 335 - Problem Set 1"
+author: "Ducheng Tan"
+date: "2026-01-22"
+output: pdf_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+\textbf{Problem 1} R contains a dataset called sunspots which contains the monthly mean
+relative sunspot numbers from 1749 to 1983, as collected at the Swiss
+Federal Observatory, in Zurich (until 1960), and then at the Tokyo
+Astronomical Observatory. The astsa library contains a dataset called
+sunspotz which contains biannual smoothed (12-month moving average)
+number of sunspots from June 1749 to December 1978. Produce two separate
+graphs in a multi-figure plot of the sunspots and sunspotz time series.
+Make sure your graphs are labelled well enough so that it’s clear which
+data is represented in each. Write a short description of what you
+observe about these two time series. Include at least three different
+observations/features.
+
+```{r}
+library(astsa)
+```
+
+
+```{r}
+(NROW(sunspots))
+(NROW(sunspotz))
+par(mfrow = c(2,1))
+tsplot(sunspots, col=  "firebrick1")
+tsplot(sunspotz, col= "gold1")
+```
+
+The time series plot from the dataset sunspots and sunspotz is plotted above. We can noticed that two plots shows indentical trends, this is due to the fact that the sunpotz is a biannual smoothed version of the sunspots plot. To be exact if $S_t$ is the timeseries for the sunspots data, and $Z_t$ for the sunspotz data, then 
+
+$$Z_t = \frac{1}{12} \sum_{t-6 \leq k \leq t+6} S_k \quad , \quad \forall t \in [1,459]$$
+the domain of $t$ is define such that each $S_t$ denotes a unique month in the data. This is true as we have NROW(sunspotz) = 459. 
+We can easily see that the sunspotz time series is a smoother version of the sunspots for the reasons we explained above.Overall both timeseries illustrates the same underlying long term patterns in their respective time. 
+
+
+\textbf{Problem 2}
+1.2. There are a number of seismic recordings from earthquakes and from mining explosions in astsa. All of the data are in the dataframe eqexp, but two specific recordings are in EQ5 and EXP6, the fifth earthquake and the sixth explosion, respec-
+tively. The data represent two phases or arrivals along the surface, denoted by $P(t=1, ... ,1024)$ and $S (t=1025, ... ,2048)$, at a seismic recording station. The recording instruments are in Scandinavia and monitor a Russian nuclear testing site.
+The general problem of interest is in distinguishing between these waveforms in order to maintain a comprehensive nuclear test ban treaty.
+To compare the earthquake and explosion signals,
+(a) Plot the two series separately in a multifigure plot with two rows and one column.
+(b) Plot the two series on the same graph using different colors or different line types.
+(c) In what way are the earthquake and explosion series different?
+
+```{r}
+#View(eqexp)
+#(a)
+par(mfrow = c(2, 1))
+
+tsplot(EQ5, type = "l",main = "Earthquake Signal (EQ5)",xlab = "Time Index",ylab = "Amplitude")
+
+tsplot(EXP6, type = "l",main = "Explosion Signal (EXP6)",xlab = "Time Index",ylab = "Amplitude")
+
+```
+```{r}
+#(b)
+tsplot(EQ5, type = "l", main="EQ5 vs EXP6", col = "blue", xlab= "Time Index", ylab = "Amplitude") 
+lines(EXP6, type= "l", col="red", lty = 5)
+legend("topright",
+legend = c("Earthquake (EQ5)", "Explosion (EXP6)"), col = c("blue", "red"),lty = c(1, 5), lwd = c(2,2))
+
+```
+(c). The 
+

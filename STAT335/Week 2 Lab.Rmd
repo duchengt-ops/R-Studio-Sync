@@ -1,0 +1,55 @@
+---
+title: "Week 2"
+author: "Ducheng Tan"
+date: "2026-01-20"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(astsa)
+library(xts)
+#View(djia)
+```
+
+$$\log (1+r_t) \approx  r_t $$
+```{r}
+djia_return = diff(log(djia$Close))[-1]
+djia_return
+par(mfrow= c(2,1))
+plot((djia$Close), col = 4)
+plot(djia_return, col = 4)
+
+
+
+```
+
+
+
+$$ r_t = \frac{x_t - x_{t-1}}{x_{t-1}}$$
+
+```{r}
+ rt_direct = diff(djia$Close)/lag(djia$Close, -1)
+cbind(rt_direct, djia_return)
+plot(rt_direct)
+
+
+#The Lag is similar to X_t-1 
+```
+
+
+
+
+```{R}
+
+
+difference <- rt_direct - djia_return 
+difference <- na.omit(difference)
+mean(difference)
+
+
+```
+We can perform $\chi^2 -$ test and $t-$ test to compare the standard deviation and mean. 
