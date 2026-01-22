@@ -1,0 +1,956 @@
+---
+title: "Statistical Machine Learning - Fundamentals - Classification Learning - 1"
+author: "Ernest Fokoué"
+date: "2024-12-06"
+output:
+  pdf_document: default
+  pdf: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Chunk
+
+```{R, echo=FALSE}
+
+  library(MASS)
+  library(datasets)
+  library(kernlab)
+  library(mlbench)
+  library(bestglm) 
+  library(glmnet)
+  library(ggplot2)
+  library(BMS)
+  library(corrplot)
+  library(car)
+  library(ROCR)
+  
+```
+
+
+## Introduction to the problem and the data
+
+We are first studying the famous Pima Indian Diabetes data originating from the area of Phoenix in Arizona. This data featuring 768 females of Pima Indian ancestry for which it become important to not only classify but also comprehend the risk factors for diabetes!
+
+```{R, echo=FALSE}
+  
+   data("PimaIndiansDiabetes")
+   #View(PimaIndiansDiabetes)
+
+
+# Load the PimaIndiansDiabetes dataset
+data(PimaIndiansDiabetes)
+
+# Store the dataset in a data frame
+df <- PimaIndiansDiabetes
+
+# First 6 rows
+head(df)
+
+# Last 6 rows
+tail(df)
+
+# Sample size
+n <- nrow(df)
+cat("Sample size (n):", n, "\n")
+
+# Dimensionality of input space (excluding the response variable)
+p <- ncol(df) - 1
+cat("Dimensionality of input space (p):", p, "\n")
+
+# Position of the response variable
+py <- which(names(df) == "diabetes")
+cat("Position of the response variable (py):", py, "\n")
+
+# Check for missing values
+missing_count <- sum(is.na(df))
+cat("Number of missing values:", missing_count, "\n")
+
+# Declare richness if n/p > 5
+richness <- ifelse(n / p > 5, "richness", "not richness")
+cat("Richness status:", richness, "\n")
+
+# Rename response variable to "Y"
+XY <- df
+names(XY)[names(XY) == "diabetes"] <- "Y"
+
+# Display first and last 6 rows of the modified dataset
+head(XY)
+tail(XY)
+
+```
+
+## Exploration of the Response Variable 
+
+Let's now explore the distribution of the response variable along with the idiosyncratic assessment of the individual discriminative and predictive power of each predictor (explanatory) variable.
+
+```{R, echo=FALSE}
+
+# Frequency and percentage distributions
+response_freq <- table(df$diabetes)
+response_perc <- prop.table(response_freq) * 100
+
+# Print the distributions
+cat("Frequency distribution:\n")
+print(response_freq)
+cat("\nPercentage distribution:\n")
+print(response_perc)
+
+# Create beautiful barplots
+par(mfrow = c(1, 2))
+barplot(response_freq, main = "Frequency Distribution", col = "skyblue", xlab = "Response", ylab = "Frequency")
+barplot(response_perc, main = "Percentage Distribution", col = "lightgreen", xlab = "Response", ylab = "Percentage")
+
+# Compute max(freq)/min(freq)
+imbalance_ratio <- max(response_freq) / min(response_freq)
+imbalance_status <- ifelse(imbalance_ratio > 10, "severe imbalance", "reasonable balance")
+
+cat("Max/Min Ratio:", imbalance_ratio, "\n")
+cat("Imbalance Status:", imbalance_status, "\n")
+
+# Compute Kruskal-Wallis test statistics for each predictor
+kruskal_results <- sapply(names(df)[-which(names(df) == "diabetes")], function(var) {
+  kruskal.test(as.formula(paste(var, "~ diabetes")), data = df)$statistic
+})
+
+# Store results as a named vector
+names(kruskal_results) <- names(df)[-which(names(df) == "diabetes")]
+
+# Plot the results using type "h"
+par(mfrow = c(1, 1))
+plot(kruskal_results, type = "h", main = "Kruskal-Wallis Test Statistics", xlab = "Predictor Variables",
+     ylab = "Test Statistic", col = "blue", xaxt = "n")
+axis(1, at = 1:length(kruskal_results), labels = names(kruskal_results), las = 2)
+
+# Identify best and worst predictors
+best_predictor <- names(kruskal_results)[which.max(kruskal_results)]
+worst_predictor <- names(kruskal_results)[which.min(kruskal_results)]
+
+cat("Best Predictor:", best_predictor, "\n")
+cat("Worst Predictor:", worst_predictor, "\n")
+
+# Set up multi-panel plotting
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
+
+# Create comparative boxplots
+for (var in names(df)[-which(names(df) == "diabetes")]) {
+  boxplot(as.formula(paste(var, "~ diabetes")), data = df, main = paste("Boxplot of", var),
+          col = c("pink", "lightblue"), xlab = "Response", ylab = var)
+}
+
+# Set up multi-panel plotting
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
+
+# Create comparative histograms
+for (var in names(df)[-which(names(df) == "diabetes")]) {
+  hist(df[[var]][df$diabetes == "pos"], main = paste("Histogram of", var, "(pos)"),
+       xlab = var, col = "red", breaks = 10, freq = TRUE)
+  hist(df[[var]][df$diabetes == "neg"], main = paste("Histogram of", var, "(neg)"),
+       xlab = var, col = "blue", breaks = 10, freq = TRUE, add = TRUE)
+  legend("topright", legend = c("pos", "neg"), fill = c("red", "blue"))
+}
+
+```
+
+## Correlation analysis and input in-depth look
+
+```{R, echo=FALSE}
+
+   str(XY[,-py]) # What are the types of the input variables
+
+   # Do we need any transformation like standardizing the input
+
+   boxplot(XY[,-py], col=1:p)
+   
+   corrplot(cor(XY[,-py]))
+```
+
+## Introduction to Fitting logistic Regression
+
+```{R, echo=FALSE}
+
+  logistic.xy <- glm(Y~., data=XY, family=binomial(link='logit'))
+  print(summary(logistic.xy))
+```
+
+## Chunk
+
+```{R, echo=FALSE}
+
+# Build the logistic regression model
+model <- glm(diabetes ~ ., data = PimaIndiansDiabetes, family = binomial(link = 'logit'))
+
+# Print model summary
+summary(model)
+
+# Compute the Chi-Squared test
+chi_sq <- model$null.deviance - model$deviance
+df <- model$df.null - model$df.residual
+overall_pvalue <- pchisq(chi_sq, df, lower.tail = FALSE)
+
+cat("Chi-Squared Statistic:", chi_sq, "\n")
+cat("Degrees of Freedom:", df, "\n")
+cat("Overall P-value:", overall_pvalue, "\n")
+
+# Compute Pseudo R²
+pseudo_r2 <- 1 - (model$deviance / model$null.deviance)
+cat("Pseudo R²:", pseudo_r2, "\n")
+
+
+```
+
+## Chunk
+
+```{R, echo=FALSE}
+# Perform stepwise selection using AIC
+aic_model <- stats::step(model, scope=~., trace=0, direction = "both", k=2)
+
+# Print summary
+summary(aic_model)
+
+# Plot residuals
+par(mfrow = c(1, 2))
+plot(residuals(aic_model), main = "Residuals of AIC Model", col = "blue")
+hist(residuals(aic_model), main = "Histogram of Residuals", col = "lightblue")
+
+```
+
+## Chunk
+
+```{R, echo=FALSE}
+# Perform stepwise selection using BIC
+bic_model <- stats::step(model, direction = "both", k = log(nrow(PimaIndiansDiabetes)))
+
+# Print summary
+summary(bic_model)
+
+# Plot residuals
+par(mfrow = c(1, 2))
+plot(residuals(bic_model), main = "Residuals of BIC Model", col = "green")
+hist(residuals(bic_model), main = "Histogram of Residuals", col = "lightgreen")
+
+```
+
+## Chunk
+
+```{R, echo=FALSE}
+# Load necessary library
+library(bestglm)
+
+# Prepare data for bestglm (convert response to 0/1)
+data_bestglm <- PimaIndiansDiabetes
+data_bestglm$diabetes <- ifelse(data_bestglm$diabetes == "pos", 1, 0)
+
+# Perform best subset selection
+best_subset <- bestglm(data_bestglm, IC = "BIC", family = binomial)
+
+# Print best subset model
+print(best_subset)
+
+```
+
+## Chunk
+
+```{R, echo=FALSE}
+# Load necessary libraries
+library(glmnet)
+
+# Prepare data for glmnet
+X <- model.matrix(diabetes ~ . - 1, data = PimaIndiansDiabetes)
+y <- ifelse(PimaIndiansDiabetes$diabetes == "pos", 1, 0)
+
+# Perform cross-validated LASSO
+cv_lasso <- cv.glmnet(X, y, family = "binomial", alpha = 1)
+
+# Fit LASSO model at the best lambda
+lasso_model <- glmnet(X, y, family = "binomial", alpha = 1, lambda = cv_lasso$lambda.min)
+
+# Plot the solution path
+plot(cv_lasso$glmnet.fit, xvar = "lambda", label = TRUE, sign.lambda=+1)
+title("LASSO Solution Path")
+
+```
+
+
+## Chunk
+
+```{R, echo=FALSE}
+# Load necessary libraries
+library(glmnet)
+
+# Prepare data for glmnet
+X <- model.matrix(diabetes ~ . - 1, data = PimaIndiansDiabetes)
+y <- ifelse(PimaIndiansDiabetes$diabetes == "pos", 1, 0)
+
+# Perform cross-validation to find the optimal lambda
+cv_lasso <- cv.glmnet(X, y, family = "binomial", alpha = 1)
+
+# Extract the best lambda
+best_lambda <- cv_lasso$lambda.min
+cat("Optimal Lambda from Cross-Validation:", best_lambda, "\n")
+
+# Fit LASSO model using the best lambda
+lasso_model <- glmnet(X, y, family = "binomial", alpha = 1, lambda = best_lambda)
+
+# Print the coefficients of the LASSO model
+cat("LASSO Coefficients at Optimal Lambda:\n")
+print(coef(lasso_model))
+
+# Plot the LASSO solution path
+plot(cv_lasso$glmnet.fit, xvar = "lambda", sign.lambda=+1, label = TRUE, main = "LASSO Solution Path")
+
+# Overlay labels for non-zero coefficients
+coefficients <- coef(cv_lasso$glmnet.fit, s = best_lambda)
+non_zero <- which(coefficients != 0)  # Indices of non-zero coefficients
+variable_names <- rownames(coefficients)[non_zero]
+
+if (length(non_zero) > 0) {
+  for (i in seq_along(non_zero)) {
+    index <- non_zero[i]
+    # Log-transform lambda values and label only non-zero coefficients
+    text(log(cv_lasso$lambda), 
+         coefficients[index, ], 
+         labels = variable_names[i], cex = 0.7, pos = 4, col = "red")
+  }
+}
+
+```
+
+
+## Chunk
+
+```{R, echo=FALSE}
+
+# Load necessary libraries
+library(MASS)
+
+# Prepare data for logistic regression
+data <- PimaIndiansDiabetes
+
+# Fit the full logistic regression model
+full_model <- glm(diabetes ~ ., data = data, family = binomial)
+
+# Perform stepwise selection using BIC
+bic_model <- stepAIC(full_model, direction = "both", trace=0, k = log(nrow(data)))
+
+# Print the summary of the BIC model
+summary(bic_model)
+
+# Extract the coefficients from the BIC model
+coefficients <- coef(bic_model)
+
+# Compute the relative change in odds for each predictor
+# Relative change in odds = (exp(coefficient) - 1) * 100
+odds_change <- (exp(coefficients) - 1) * 100
+
+# Print the relative changes
+cat("Relative Change in Odds (in %):\n")
+print(odds_change)
+
+# Interpretation for glucose
+cat("For glucose: A one-unit increase leads to a", round(odds_change["glucose"], 2), 
+    "% change in the odds of diabetes.\n")
+
+# Interpretation for pregnant
+cat("For pregnant: A one-unit increase leads to a", round(odds_change["pregnant"], 2), 
+    "% change in the odds of diabetes.\n")
+
+```
+
+
+
+## Logistic Regression beyond the interpretation: Prediction and Performance assessment
+
+```{R, echo=FALSE}
+
+# Fit the full logistic regression model
+full_model <- glm(diabetes ~ ., data = PimaIndiansDiabetes, family = binomial)
+
+# Perform stepwise selection using BIC
+bic_model <- stepAIC(full_model, direction = "both", trace=0, k = log(nrow(PimaIndiansDiabetes)))
+
+# Extract and print the variables in the BIC model
+cat("Variables included in the BIC model:\n")
+print(names(coef(bic_model)))
+
+```
+
+
+## Chunk
+
+```{R, echo=FALSE}
+# Fit the final logistic regression model using BIC-selected variables
+logistic.xy.final <- glm(diabetes ~ pregnant + glucose + mass + pedigree, data = PimaIndiansDiabetes, 
+                         family = binomial)
+
+# Print summary of the model
+summary(logistic.xy.final)
+
+# (a) Predict probabilities
+predicted_probs <- predict(logistic.xy.final, type = "response")
+
+# (b) Predict labels (threshold = 0.5)
+predicted_labels <- ifelse(predicted_probs > 0.5, "pos", "neg")
+
+# (c) Confusion Matrix
+true_labels <- PimaIndiansDiabetes$diabetes
+conf_matrix <- table(True = true_labels, Predicted = predicted_labels)
+cat("Confusion Matrix:\n")
+print(conf_matrix)
+
+
+# (d) Plot predicted probabilities
+plot(predicted_probs, 
+     col = ifelse(true_labels == "pos", "red", "blue"), 
+     pch = 16, xlab = "Index", ylab = "Predicted Probability", 
+     main = "Predicted Probabilities")
+legend("topright", legend = c("Positive", "Negative"), 
+       col = c("red", "blue"), pch = 16)
+
+library(ROCR)
+
+# (e) Plot ROC curve
+pred <- prediction(predicted_probs, true_labels)
+perf <- performance(pred, "tpr", "fpr")
+plot(perf, col = "blue", lwd = 2, main = "ROC Curve")
+abline(a = 0, b = 1, lty = 2, col = "gray") # Diagonal line
+
+# (f) Compute AUC
+auc <- performance(pred, "auc")@y.values[[1]]
+cat("Area Under the Curve (AUC):", round(auc, 4), "\n")
+
+# (g) Compute evaluation metrics
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+error_rate <- 1 - accuracy
+tpr <- conf_matrix["pos", "pos"] / sum(conf_matrix["pos", ])
+fpr <- conf_matrix["neg", "pos"] / sum(conf_matrix["neg", ])
+precision <- conf_matrix["pos", "pos"] / sum(conf_matrix[, "pos"])
+recall <- tpr
+f_score <- 2 * (precision * recall) / (precision + recall)
+
+# Create a table for evaluation metrics
+metrics <- data.frame(
+  Metric = c("Accuracy", "Error Rate", "True Positive Rate (TPR)", 
+             "False Positive Rate (FPR)", "Precision", "Recall", "F-Score"),
+  Value = c(accuracy, error_rate, tpr, fpr, precision, recall, f_score)
+)
+print(metrics)
+
+# Declare results
+cat("Model Evaluation Metrics:\n")
+print(metrics)
+
+
+```
+
+## Predictive Analytics Full Scale
+
+# Chunk
+
+```{R, echo=FALSE}
+# Load required libraries
+library(MASS)         # For stepAIC (AIC and BIC models)
+library(class)        # For kNN
+library(rpart)        # For classification tree
+library(ROCR)         # For ROC curves
+library(dplyr)        # For data manipulation
+
+# Load the PimaIndiansDiabetes dataset
+data("PimaIndiansDiabetes", package = "mlbench")
+
+# Define helper functions for metrics
+compute_metrics <- function(conf_matrix) {
+  accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+  error <- 1 - accuracy
+  precision <- conf_matrix["pos", "pos"] / sum(conf_matrix[, "pos"])
+  recall <- conf_matrix["pos", "pos"] / sum(conf_matrix["pos", ])
+  tpr <- recall
+  fpr <- conf_matrix["neg", "pos"] / sum(conf_matrix["neg", ])
+  f_score <- 2 * precision * recall / (precision + recall)
+  
+  return(c(accuracy, error, precision, recall, tpr, fpr, f_score))
+}
+```
+
+
+
+# Subchunk
+
+```{R, echo=FALSE}
+set.seed(123)  # For reproducibility
+S <- 100       # Number of splits
+train_ratio <- 0.7  # Training set proportion
+
+# Storage for metrics
+metrics_list <- list(train = list(), test = list())
+
+# Loop over stochastic splits
+for (i in 1:S) 
+{
+  # Split data
+  train_index <- sample(1:nrow(PimaIndiansDiabetes), 
+                        size = train_ratio * nrow(PimaIndiansDiabetes))
+  train_set   <- PimaIndiansDiabetes[train_index, ]
+  test_set    <- PimaIndiansDiabetes[-train_index, ]
+  
+  # True labels
+  true_train <- train_set$diabetes
+  true_test  <- test_set$diabetes
+  
+  # (a) AIC logistic regression
+  aic_model <- stepAIC(glm(diabetes ~ ., data = train_set, family = binomial), 
+                       direction = "both", trace = FALSE)
+  pred_train_aic <- ifelse(predict(aic_model, type = "response") > 0.5, "pos", "neg")
+  pred_test_aic <- ifelse(predict(aic_model, newdata = test_set, type = "response") > 0.5, "pos", "neg")
+  
+  # (b) BIC logistic regression
+  bic_model <- stepAIC(glm(diabetes ~ ., data = train_set, family = binomial), 
+                       direction = "both", k = log(nrow(train_set)), trace = FALSE)
+  pred_train_bic <- ifelse(predict(bic_model, type = "response") > 0.5, "pos", "neg")
+  pred_test_bic <- ifelse(predict(bic_model, newdata = test_set, type = "response") > 0.5, "pos", "neg")
+  
+  # (c) 1-Nearest Neighbor
+  pred_train_knn <- knn(train_set[, -9], train_set[, -9], cl = true_train, k = 1)
+  pred_test_knn <- knn(train_set[, -9], test_set[, -9], cl = true_train, k = 1)
+  
+  # (d) Classification Tree
+  tree_model <- rpart(diabetes ~ ., data = train_set, method = "class")
+  pred_train_tree <- predict(tree_model, type = "class")
+  pred_test_tree <- predict(tree_model, newdata = test_set, type = "class")
+  
+  # Compute metrics
+  conf_train_aic <- table(True = true_train, Predicted = pred_train_aic)
+  conf_test_aic <- table(True = true_test, Predicted = pred_test_aic)
+  
+  conf_train_bic <- table(True = true_train, Predicted = pred_train_bic)
+  conf_test_bic <- table(True = true_test, Predicted = pred_test_bic)
+  
+  conf_train_knn <- table(True = true_train, Predicted = pred_train_knn)
+  conf_test_knn <- table(True = true_test, Predicted = pred_test_knn)
+  
+  conf_train_tree <- table(True = true_train, Predicted = pred_train_tree)
+  conf_test_tree <- table(True = true_test, Predicted = pred_test_tree)
+  
+  metrics_list$train[[i]] <- list(
+    AIC = compute_metrics(conf_train_aic),
+    BIC = compute_metrics(conf_train_bic),
+    kNN = compute_metrics(conf_train_knn),
+    Tree = compute_metrics(conf_train_tree)
+  )
+  
+  metrics_list$test[[i]] <- list(
+    AIC = compute_metrics(conf_test_aic),
+    BIC = compute_metrics(conf_test_bic),
+    kNN = compute_metrics(conf_test_knn),
+    Tree = compute_metrics(conf_test_tree)
+  )
+}
+
+```
+
+
+# SubChunk
+
+```{R, echo=FALSE}
+# ROC curves for the last split
+last_pred_train_aic <- prediction(predict(aic_model, type = "response"), true_train)
+last_pred_test_aic <- prediction(predict(aic_model, newdata = test_set, type = "response"), true_test)
+
+last_pred_train_bic <- prediction(predict(bic_model, type = "response"), true_train)
+last_pred_test_bic <- prediction(predict(bic_model, newdata = test_set, type = "response"), true_test)
+
+last_pred_train_knn <- prediction(as.numeric(pred_train_knn) - 1, as.numeric(true_train) - 1)
+last_pred_test_knn <- prediction(as.numeric(pred_test_knn) - 1, as.numeric(true_test) - 1)
+
+last_pred_train_tree <- prediction(as.numeric(predict(tree_model, type = "prob")[, 2]), as.numeric(true_train) - 1)
+last_pred_test_tree <- prediction(as.numeric(predict(tree_model, newdata = test_set, type = "prob")[, 2]), as.numeric(true_test) - 1)
+
+# Performance objects
+perf_train_aic <- performance(last_pred_train_aic, "tpr", "fpr")
+perf_test_aic <- performance(last_pred_test_aic, "tpr", "fpr")
+
+perf_train_bic <- performance(last_pred_train_bic, "tpr", "fpr")
+perf_test_bic <- performance(last_pred_test_bic, "tpr", "fpr")
+
+perf_train_knn <- performance(last_pred_train_knn, "tpr", "fpr")
+perf_test_knn <- performance(last_pred_test_knn, "tpr", "fpr")
+
+perf_train_tree <- performance(last_pred_train_tree, "tpr", "fpr")
+perf_test_tree <- performance(last_pred_test_tree, "tpr", "fpr")
+
+# Plotting ROC curves
+plot(perf_train_aic, col = "blue", lwd = 2, main = "ROC Curves (Last Split)")
+lines(perf_test_aic@x.values[[1]], perf_test_aic@y.values[[1]], col = "blue", lty = 2)
+
+lines(perf_train_bic@x.values[[1]], perf_train_bic@y.values[[1]], col = "green", lwd = 2)
+lines(perf_test_bic@x.values[[1]], perf_test_bic@y.values[[1]], col = "green", lty = 2)
+
+lines(perf_train_knn@x.values[[1]], perf_train_knn@y.values[[1]], col = "red", lwd = 2)
+lines(perf_test_knn@x.values[[1]], perf_test_knn@y.values[[1]], col = "red", lty = 2)
+
+lines(perf_train_tree@x.values[[1]], perf_train_tree@y.values[[1]], col = "purple", lwd = 2)
+lines(perf_test_tree@x.values[[1]], perf_test_tree@y.values[[1]], col = "purple", lty = 2)
+
+# Adding legend
+legend("bottomright", inset = 0.02, 
+       legend = c("AIC Train", "AIC Test", "BIC Train", "BIC Test", 
+                  "kNN Train", "kNN Test", "Tree Train", "Tree Test"),
+       col = c("blue", "blue", "green", "green", "red", "red", "purple", "purple"),
+       lty = c(1, 2, 1, 2, 1, 2, 1, 2), lwd = 2)
+
+
+```
+
+
+## Chunk
+
+```{R, echo=FALSE}
+# Set up plotting space for two panels
+par(mfrow = c(1, 2))  # One row, two columns
+
+# Training ROC curves
+plot(perf_train_aic, col = "blue", lwd = 2, main = "Training ROC Curves")
+lines(perf_train_bic@x.values[[1]], perf_train_bic@y.values[[1]], col = "green", lwd = 2)
+lines(perf_train_knn@x.values[[1]], perf_train_knn@y.values[[1]], col = "red", lwd = 2)
+lines(perf_train_tree@x.values[[1]], perf_train_tree@y.values[[1]], col = "purple", lwd = 2)
+
+# Add legend for Training
+legend("bottomright", inset = 0.02, 
+       legend = c("AIC", "BIC", "kNN", "Tree"),
+       col = c("blue", "green", "red", "purple"),
+       lty = 1, lwd = 2)
+
+# Test ROC curves
+plot(perf_test_aic, col = "blue", lwd = 2, main = "Test ROC Curves")
+lines(perf_test_bic@x.values[[1]], perf_test_bic@y.values[[1]], col = "green", lwd = 2)
+lines(perf_test_knn@x.values[[1]], perf_test_knn@y.values[[1]], col = "red", lwd = 2)
+lines(perf_test_tree@x.values[[1]], perf_test_tree@y.values[[1]], col = "purple", lwd = 2)
+
+# Add legend for Test
+legend("bottomright", inset = 0.02, 
+       legend = c("AIC", "BIC", "kNN", "Tree"),
+       col = c("blue", "green", "red", "purple"),
+       lty = 1, lwd = 2)
+
+```
+
+
+## Get the errors
+
+```{r cross_validation_loop, echo=FALSE}
+# Monte Carlo Cross-Validation Loop with S iterations
+S <- 100  # Number of Monte Carlo iterations
+test_errors <- matrix(0, nrow = S, ncol = 4)  # Store test errors for 4 models
+colnames(test_errors) <- c("AIC", "BIC", "kNN", "Tree")
+
+set.seed(123)  # For reproducibility
+
+for (s in 1:S) 
+{
+  # Split data into training and test sets
+  train_indices <- sample(1:nrow(attitude), size = 0.7 * nrow(attitude))
+  train_data    <- attitude[train_indices, ]
+  test_data     <- attitude[-train_indices, ]
+  
+  # 1. AIC model
+  aic_model <- stats::step(lm(rating ~ ., data = train_data), 
+                    scope = ~., trace = 0, direction = "both", k = 2)
+  aic_pred  <- predict.lm(aic_model, newdata = test_data)
+  test_errors[s, "AIC"] <- mean((test_data$rating - aic_pred)^2)
+  
+  # 2. BIC model  
+  bic_model <- stats::step(lm(rating ~ ., data = train_data),
+                    scope = ~., trace = 0, direction = "both", k = log(nrow(train_data)))
+  bic_pred <- predict.lm(bic_model, newdata = test_data)
+  test_errors[s, "BIC"] <- mean((test_data$rating - bic_pred)^2)
+  
+  # 3. kNN model
+  library(class)
+  # Standardize features for kNN
+  train_std <- scale(train_data[, -1])
+  test_std  <- scale(test_data[, -1], 
+                    center = attr(train_std, "scaled:center"),
+                    scale = attr(train_std, "scaled:scale"))
+  
+  k <- 5  # Number of neighbors
+  knn_pred <- knn(train_std, test_std, train_data$rating, k = k)
+  test_errors[s, "kNN"] <- mean((test_data$rating - as.numeric(as.character(knn_pred)))^2)
+  
+  # 4. Decision Tree
+  library(rpart)
+  tree_model <- rpart(rating ~ ., data = train_data, method = "anova")
+  tree_pred  <- predict(tree_model, newdata = test_data)
+  test_errors[s, "Tree"] <- mean((test_data$rating - tree_pred)^2)
+  
+  # Progress indicator
+  if (s %% 20 == 0) cat("Completed", s, "iterations\n")
+}
+
+# Display summary statistics
+cat("\nAverage Test Errors:\n")
+print(colMeans(test_errors))
+cat("\nStandard Deviations:\n")
+print(apply(test_errors, 2, sd))
+
+# Now you can use test_errors for plotting
+# For example: boxplot(test_errors, main = "Test Errors by Model")
+```
+
+## Prepare and boxplot the errors
+
+```{R, echo=FALSE}
+# Convert test errors to a data frame for plotting
+test_error_df <- as.data.frame(t(test_errors))
+colnames(test_error_df) <- c("AIC", "BIC", "kNN", "Tree")
+
+# Plot boxplots for test errors
+boxplot(test_error_df, 
+        col = rainbow(4), 
+        main = "Test Errors by Model", 
+        xlab = "Model", 
+        ylab = "Test Error")
+
+```
+
+## Getting some F-scores
+
+```{r fscore_cross_validation, echo=FALSE}
+# Monte Carlo Cross-Validation Loop with S iterations for F-scores
+# For classification tasks (e.g., using Pima Indians Diabetes dataset)
+
+# Load Pima Indians Diabetes dataset
+library(mlbench)
+data(PimaIndiansDiabetes)
+
+# Use diabetes dataset for classification
+data <- PimaIndiansDiabetes
+S <- 100  # Number of Monte Carlo iterations
+test_f_scores <- matrix(0, nrow = S, ncol = 4)  # Store F-scores for 4 models
+colnames(test_f_scores) <- c("Logistic_AIC", "Logistic_BIC", "kNN", "Tree")
+
+# Function to calculate F1 score
+calculate_f1 <- function(predicted, actual, positive_class = "pos") {
+  # Confusion matrix components
+  actual_pos <- actual == positive_class
+  predicted_pos <- predicted == positive_class
+  
+  tp <- sum(actual_pos & predicted_pos)
+  fp <- sum(!actual_pos & predicted_pos)
+  fn <- sum(actual_pos & !predicted_pos)
+  
+  # Calculate precision, recall, and F1
+  precision <- ifelse((tp + fp) > 0, tp / (tp + fp), 0)
+  recall <- ifelse((tp + fn) > 0, tp / (tp + fn), 0)
+  f1 <- ifelse((precision + recall) > 0, 
+               2 * precision * recall / (precision + recall), 
+               0)
+  
+  return(f1)
+}
+
+set.seed(123)  # For reproducibility
+
+for (s in 1:S) {
+  # Split data into training and test sets
+  train_indices <- sample(1:nrow(data), size = 0.7 * nrow(data))
+  train_data    <- data[train_indices, ]
+  test_data     <- data[-train_indices, ]
+  
+  # 1. Logistic Regression with AIC selection
+  full_model <- glm(diabetes ~ ., data = train_data, family = binomial)
+  aic_model <- stats::step(full_model, scope = ~., trace = 0, direction = "both", k = 2)
+  aic_pred_prob <- predict(aic_model, newdata = test_data, type = "response")
+  aic_pred <- ifelse(aic_pred_prob > 0.5, "pos", "neg")
+  test_f_scores[s, "Logistic_AIC"] <- calculate_f1(aic_pred, test_data$diabetes)
+  
+  # 2. Logistic Regression with BIC selection
+  bic_model <- stats::step(full_model, scope = ~., trace = 0, direction = "both", 
+                    k = log(nrow(train_data)))
+  bic_pred_prob <- predict(bic_model, newdata = test_data, type = "response")
+  bic_pred <- ifelse(bic_pred_prob > 0.5, "pos", "neg")
+  test_f_scores[s, "Logistic_BIC"] <- calculate_f1(bic_pred, test_data$diabetes)
+  
+  # 3. kNN model
+  library(class)
+  # Standardize numeric features for kNN
+  numeric_cols   <- sapply(train_data, is.numeric)
+  train_features <- as.matrix(train_data[, numeric_cols])
+  test_features  <- as.matrix(test_data[, numeric_cols])
+  
+  train_std <- scale(train_features)
+  test_std  <- scale(test_features, 
+                    center = attr(train_std, "scaled:center"),
+                    scale = attr(train_std, "scaled:scale"))
+  
+  k <- 5  # Number of neighbors
+  knn_pred <- knn(train_std, test_std, train_data$diabetes, k = k)
+  test_f_scores[s, "kNN"] <- calculate_f1(knn_pred, test_data$diabetes)
+  
+  # 4. Decision Tree
+  library(rpart)
+  tree_model <- rpart(diabetes ~ ., data = train_data, method = "class")
+  tree_pred  <- predict(tree_model, newdata = test_data, type = "class")
+  test_f_scores[s, "Tree"] <- calculate_f1(tree_pred, test_data$diabetes)
+  
+  # Progress indicator
+  if (s %% 20 == 0) cat("Completed", s, "F-score iterations\n")
+}
+
+# Display summary statistics
+cat("\nAverage F1 Scores (higher is better):\n")
+print(colMeans(test_f_scores))
+cat("\nStandard Deviations:\n")
+print(apply(test_f_scores, 2, sd))
+
+# Create boxplot
+boxplot(test_f_scores, 
+        main = "F1 Scores by Model",
+        ylab = "F1 Score",
+        col = c("lightblue", "lightgreen", "lightcoral", "lightgoldenrod"),
+        ylim = c(0, 1))
+grid()
+
+```
+
+## Showing the F-scores
+
+```{R, echo=FALSE}
+# Convert test F-scores to a data frame for plotting
+test_f_score_df <- as.data.frame(t(test_f_scores))
+colnames(test_f_score_df) <- c("AIC", "BIC", "kNN", "Tree")
+
+# Plot boxplots for F-scores
+boxplot(test_f_score_df, 
+        col = rainbow(4), 
+        main = "Test F-scores by Model", 
+        xlab = "Model", 
+        ylab = "F-Score")
+
+```
+
+# Subchunk
+
+```{R, echo=FALSE}
+library(class)
+library(rpart)
+library(mlbench)
+
+set.seed(123)
+
+# Initialize metrics list
+metrics_list <- list(
+  AIC = list(train = vector("list", S), test = vector("list", S)),
+  BIC = list(train = vector("list", S), test = vector("list", S)),
+  kNN = list(train = vector("list", S), test = vector("list", S)),
+  CART = list(train = vector("list", S), test = vector("list", S))
+)
+
+# Helper function to compute performance metrics
+compute_metrics <- function(predicted, actual) {
+  actual <- factor(actual)
+  predicted <- factor(predicted, levels = levels(actual))
+  cm <- table(Predicted = predicted, Actual = actual)
+  accuracy <- sum(diag(cm)) / sum(cm)
+  error <- 1 - accuracy
+  precision <- diag(cm) / rowSums(cm)
+  recall <- diag(cm) / colSums(cm)
+  f_score <- 2 * (precision * recall) / (precision + recall)
+  fpr <- colSums(cm - diag(cm)) / sum(cm)
+  tpr <- recall
+  
+  metrics <- c(Accuracy = accuracy, Error = error, Precision = mean(precision, na.rm = TRUE),
+               Recall = mean(recall, na.rm = TRUE), TPR = mean(tpr, na.rm = TRUE), 
+               FPR = mean(fpr, na.rm = TRUE), F_score = mean(f_score, na.rm = TRUE))
+  return(metrics)
+}
+
+# Main loop for S stochastic holdouts
+for (s in 1:S) {
+  # Split the data into training and test sets
+  train_indices <- sample(1:nrow(PimaIndiansDiabetes), 
+                          size = 0.7 * nrow(PimaIndiansDiabetes))
+  test_indices  <- setdiff(1:nrow(PimaIndiansDiabetes), train_indices)
+  
+  train_data    <- PimaIndiansDiabetes[train_indices, ]
+  test_data     <- PimaIndiansDiabetes[test_indices, ]
+  
+  # AIC logistic regression
+  aic_model <- stats::step(glm(diabetes ~ ., data = train_data, 
+                               family = binomial(link = "logit")), 
+                           direction = "both", trace = FALSE)
+  aic_train_preds <- predict(aic_model, train_data, type = "response")
+  aic_test_preds  <- predict(aic_model, test_data, type = "response")
+  metrics_list$AIC$train[[s]] <- compute_metrics(ifelse(aic_train_preds > 0.5, "pos", "neg"), train_data$diabetes)
+  metrics_list$AIC$test[[s]] <- compute_metrics(ifelse(aic_test_preds > 0.5, "pos", "neg"), test_data$diabetes)
+  
+  # BIC logistic regression
+  bic_model <- stats::step(glm(diabetes ~ ., data = train_data, 
+                        family = binomial(link = "logit")), 
+                        direction = "both", k = log(nrow(train_data)), 
+                        trace = FALSE)
+  bic_train_preds <- predict(bic_model, train_data, type = "response")
+  bic_test_preds  <- predict(bic_model, test_data, type = "response")
+  metrics_list$BIC$train[[s]] <- compute_metrics(ifelse(bic_train_preds > 0.5, "pos", "neg"), train_data$diabetes)
+  metrics_list$BIC$test[[s]] <- compute_metrics(ifelse(bic_test_preds > 0.5, "pos", "neg"), test_data$diabetes)
+  
+  # kNN classification
+  knn_train_preds <- knn(train = train_data[, -9], 
+                         test = train_data[, -9], cl = train_data$diabetes, k = 1)
+  knn_test_preds  <- knn(train = train_data[, -9], 
+                        test = test_data[, -9], cl = train_data$diabetes, k = 1)
+  metrics_list$kNN$train[[s]] <- compute_metrics(knn_train_preds, train_data$diabetes)
+  metrics_list$kNN$test[[s]] <- compute_metrics(knn_test_preds, test_data$diabetes)
+  
+  # CART classification
+  cart_model <- rpart(diabetes ~ ., data = train_data, method = "class")
+  cart_train_preds <- predict(cart_model, train_data, type = "class")
+  cart_test_preds <- predict(cart_model, test_data, type = "class")
+  metrics_list$CART$train[[s]] <- compute_metrics(cart_train_preds, train_data$diabetes)
+  metrics_list$CART$test[[s]] <- compute_metrics(cart_test_preds, test_data$diabetes)
+}
+
+# Aggregate metrics
+average_metrics_train <- sapply(metrics_list, function(x) colMeans(do.call(rbind, x$train), na.rm = TRUE))
+average_metrics_test <- sapply(metrics_list, function(x) colMeans(do.call(rbind, x$test), na.rm = TRUE))
+
+# Plot average training and test errors
+plot(1:4, average_metrics_train["Error", ], type = "b", col = "blue", ylim = c(0, max(average_metrics_test["Error", ], average_metrics_train["Error", ], na.rm = TRUE)),
+     xlab = "Machine", ylab = "Error", main = "Average Training and Test Errors", xaxt = "n")
+lines(1:4, average_metrics_test["Error", ], type = "b", col = "red")
+axis(1, at = 1:4, labels = c("AIC", "BIC", "kNN", "CART"))
+legend("bottomleft", inset=0.02, legend = c("Training Error", "Test Error"), col = c("blue", "red"), lty = 1)
+
+
+```
+
+# Subchunk
+
+```{R, echo=FALSE}
+# Prepare the data for the table
+
+AverageTraining <- average_metrics_train[2,]
+AverageTest     <- average_metrics_test[2,]
+
+average_errors_table <- data.frame(
+  Model = c("Logistic Regression (AIC)", "Logistic Regression (BIC)", 
+            "k-Nearest Neighbors", "Classification Tree"),
+  Avg_Training_Error = AverageTraining,
+  Avg_Test_Error = AverageTest
+)
+
+# Load knitr for table rendering
+library(knitr)
+
+# Display the table
+kable(average_errors_table, 
+      caption = "Average Training and Test Errors for Each Model",
+      col.names = c("Model", "Avg Training Error", "Avg Test Error"),
+      digits = 4,  # Adjust precision for better readability
+      align = "lcc")  # Align columns: left for Model, center for errors
+
+```
+
+
+We are always Happy and Joyful! Thank you!

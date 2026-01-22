@@ -1,0 +1,11 @@
+---
+title: "STAT 547"
+author: "Ducheng Tan"
+date: "2026-01-20"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
