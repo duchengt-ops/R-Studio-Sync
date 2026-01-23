@@ -1,0 +1,459 @@
+---
+title: "STAT 335, Introduction to Time Series, Unit 1"
+subtitle: "(Part c): Time Series Models"
+author: "Dr. Mary Lynn Reed"
+date: ""
+theme: "Warsaw"
+colortheme: "wolverine"
+output: beamer_presentation
+header-includes:
+  - \usefonttheme{serif}
+  - \newtheorem{prop}{Proposition}
+  - \newtheorem{thm}{Theorem}
+  - \newtheorem{cor}{Corollary}
+  - \newtheorem{exer}{Exercise}
+  - \setbeamertemplate{footline}[frame number]
+  - \usepackage{setspace}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(xts)
+library(astsa)
+```
+
+## Modeling Time Series
+
+-   The primary objective of time series analysis is to develop
+    mathematical models that provide plausible descriptions for various
+    sample time series data
+
+
+
+-   From our initial examination of time series data, it's reasonable to
+    conclude that many time series data are *correlated* (across time)
+
+
+
+-   i.e., the value $x_t$ (at time $t$), may depend in some way on the
+    past values $x_{t-1}, x_{t-2}, \ldots$
+
+
+
+-   This gives us a start at how to generate realistic looking time
+    series data
+
+## White Noise
+
+-   Let $w_t$ denote a series of *uncorrelated* random variables with
+    mean 0 and a finite (fixed) variance $\sigma_w^2$
+
+
+
+-   In engineering applications, this is often called *white noise*
+
+
+
+**Notation:** $w_t \sim wn(0,\sigma_w^2)$
+
+
+
+```{=tex}
+\vskip .3cm
+\begin{block}{}
+Why {\bf white}? the term {\it white noise} is used as an analogy to white light, which contains all frequencies in the color spectrum at the same level of intensity.
+\end{block}
+\vskip .3cm
+```
+
+
+-   One particular kind of white noise is when the variables are
+    independent and identically distributed normals; i.e.,
+    $w_t \sim \text{iid } N(0,\sigma_w^2)$
+
+## White Noise
+
+```{r, echo=TRUE}
+w = rnorm(400) # 400 N(0,1) variates
+tsplot(w, col="blue")
+```
+
+## White Noise
+
+> -   Notice that this uncorrelated random sample of $N(0,1)$ variates has
+    some resemblance to some portions of the DJIA returns
+
+
+
+
+> -   If the stochastic behavior of all time series could be explained in
+    terms of the white noise model, classical statistical techniques
+    would suffice for time series analysis
+
+
+
+
+> -   But that is not the case, so we need other methods!
+
+## Smoothing
+
+-   The raw white noise samples were quite "jaggy"
+
+
+
+> -   Sometimes we want a "smoother" looking series
+
+
+
+> -   If we have several $wn(0,\sigma_w^2)$ random variables, what happens when you look at their average?
+
+
+
+> -   What statistical result are we leveraging?
+
+## Statistical Reminders
+
+```{=tex}
+\begin{block}{Distribution of Sample Mean}
+Let $X_1, X_2, \ldots, X_n$ be a random sample from a {\it normal distribution} with mean $\mu$ and standard deviation $\sigma$.
+\vskip .4cm
+Then for any $n$, the sample mean, $\bar{X}$, is normally distributed with mean $\mu$ and standard deviation $\sigma/\sqrt{n}$.
+\vskip .8cm
+\end{block}
+```
+
+
+So, in the case of $N(0,1)$, with a sample of size $n$, the sample mean
+will be normally distributed with mean 0 and standard deviation
+$1/\sqrt{n}$.
+
+## And while we're at it...
+
+-   What if the white noise isn't normal but does have a fixed mean and
+    standard deviation; then what can we say about the distribution of its sample means?
+
+```{=tex}
+\vskip 1cm
+\only<2->{
+\begin{block}{Central Limit Theorem}
+Let $X_1, X_2, \ldots, X_n$ be a random sample from {\it any distribution} with mean $\mu$ and variance $\sigma^2$. 
+\vskip .4cm
+Then if $n$ is sufficiently large, the sample mean, $\bar{X}$, has approximately a normal distribution with mean $\mu$ and variance $\sigma^2/n$.
+\end{block}
+}
+```
+## Moving Averages
+
+-   Okay, now we have the proper framework to look at a time series
+    smoothing technique called \`\`moving averages"
+
+-   Let's replace the white noise series $w_t$ by a \`\`moving average"
+    of its values that will produce a smoother time series
+
+-   Specifically, consider
+    $$v_t = \frac{1}{3}\left(w_{t-1}+w_t+w_{t+1}\right)$$
+
+## Moving Averages
+
+```{r}
+par(mfrow=2:1)
+w = rnorm(400) # 400 N(0,1) variates
+v = filter(w, sides=2, filter=rep(1/3,3)) # moving average
+tsplot(w, col=4, main="white noise")
+tsplot(v, ylim=c(-3,3), col=4, main="moving average")
+```
+
+## Moving Averages
+
+> -   The moving average sequence is not only smoother but also has
+>     lower variance (which we should expect, right?)
+
+
+
+> -   What else? (And does it look like any of the data sets we've
+>     examined?)
+
+
+
+> -   Notice there's some similarity between the moving average series
+>     and parts of the fMRI data
+
+
+
+> -   What if we want to produce even \`\`smoother" data?
+
+## Trying it with $v_t = \frac{1}{5}\left(w_{t-2}+w_{t-1}+w_t+w_{t+1}+w_{t+2}\right)$
+
+```{r}
+par(mfrow=2:1)
+w = rnorm(400) # 400 N(0,1) variates
+v = filter(w, sides=2, filter=rep(1/5,5)) # moving average
+tsplot(w, col=4, main="white noise")
+tsplot(v, ylim=c(-3,3), col=4, main="moving average")
+```
+
+## In R, this is done with the filter() command
+
+```{=tex}
+{\tt v = filter(w, sides=2, filter=rep(1/5,5))}
+
+\vskip .7cm
+
+\begin{block}{Exercise 1c.1a}
+Use R help to work out and explain exactly what this statement is doing...
+\end{block}
+
+\vskip .7cm
+
+Note what the ``{\tt sides}" parameter does...
+```
+
+
+
+## Linear Filters
+
+Mathematically, we say that a *linear filter* is a transformation of an
+input series $x_t$ using a sequence of coefficients $a_j$ for
+$j = 0, \pm 1, \pm 2, \ldots$ as:
+$$y_t = \sum_{j=-\infty}^\infty a_j x_{t-j},$$ where
+$\sum_{j=-\infty}^\infty |a_j| < \infty.$
+
+This is also sometimes called a *convolution*.
+
+
+## Moving Average as a Linear Filter
+
+-   Think about moving averages in this context...
+
+>
+
+-   If $v_t = \frac{1}{3}(w_{t-1}+ w_t + w_{t+1})$, then $v_t$ is a
+    *linear filter* (or *convolution*) of $w_t$ with what sequence of
+    coefficients?
+    
+>
+
+\only<2->{
+{\bf Answer:}
+$a_{-1} = a_0 = a_1 = \frac{1}{3}$ and all other $a_j = 0$.
+}
+
+## Autoregression
+
+-   Moving averages can create a \`\`smoother" version of a time series
+    but it keeps the same basic shape of the data
+
+>
+
+> -   We saw a few different data sets with oscillatory (quasi-periodic)
+>     behavior so we need a model that can produce that kind of effect,
+>     too
+
+>
+
+> -   Let $w_t$ be a white noise time series.
+
+
+
+> -   Consider the following: $$x_t = 1.5x_{t-1} - 0.75x_{t-2} + w_t,$$
+>     where we let $x_{-1} = x_0 = 0$.
+
+## Autoregression
+
+-   Given the recursive formula and the initial conditions, the behavior
+    at the beginning of the sequence won't have the full oscillatory
+    effect
+
+>
+
+-   The \`\`fix" for this is to run the sequence out a while and then
+    look at it...
+
+>
+
+Here's some R code that produces the autoregressive sequence (plotted on
+next slide)
+
+>
+
+```{r, echo=TRUE}
+set.seed(90210)
+w = rnorm(250 + 50) # 50 extra to avoid startup problems
+x = filter(w, filter=c(1.5,-.75), 
+           method="recursive")[-(1:50)]
+```
+
+## Autoregression
+
+```{r}
+set.seed(90210)
+w = rnorm(250 + 50) # 50 extra to avoid startup problems
+x = filter(w, filter=c(1.5,-.75), 
+           method="recursive")[-(1:50)]
+tsplot(x, main="autoregression", col=4)
+```
+
+## Autoregression with filter() command
+
+```{=tex}
+\begin{block}{Exercise 1c.1b}
+To illustrate the workings of the "recursive" filter, look at the following example. Do the following in R, and then look at the values in the variables {\tt x} and {\tt y}:
+
+{\tt x <- 1:10}
+
+{\tt y <- filter(x, filter=c(1,1), method="recursive")}
+
+\vskip .4cm
+Now, do the first few calculations of the recurrence:
+$$y_t = y_{t-1} + y_{t-2} + x_t$$
+by hand, assuming $y_{-1} = y_0 = 0$ and where $x_1 = 1, x_2, = 2, x_3 = 3,$ etc. 
+\vskip .5cm
+Your $y_t$ sequence should be the values that appear in the {\tt y} variable... 
+\end{block}
+```
+## Random Walk with Drift
+
+> -   So far we've seen how to produce random behavior (white noise),
+>     smoothing effects (moving averages), and oscillations
+>     (autoregression)
+
+> -   Next we need a model for trend (e.g., the upward climb of a stock
+>     price, or Earth's temperature, for example)
+
+> -   E.g., the *random walk with drift* model:
+>     $$x_t = \delta + x_{t-1} + w_t$$ where $w_t$ is white noise and
+>     $x_0 = 0$ is the initial condition. The constant $\delta$ is
+>     called the *drift*.
+
+> -   When $\delta = 0$, this is just called a *random walk*.
+
+## Random Walk with Drift
+
+```{=tex}
+\begin{block}{Exercise 1c.2}
+Show that the random walk with drift model is equivalent to: 
+$$x_t = \delta t + \sum_{j=1}^t w_j$$ 
+for $t = 1,2,\ldots$.
+\end{block}
+```
+## Random Walk with Drift
+
+```{r}
+set.seed(314159265) # so you can reproduce the results
+w  = rnorm(200) 
+x  = cumsum(w)
+wd = w +.3 
+xd = cumsum(wd)
+tsplot(xd, ylim=c(-2,80), main="random walk", ylab="", col=4)
+ clip(0, 200, 0, 80)
+ abline(a=0, b=.3, lty=2, col=4) # drift
+lines(x, col=6)
+ clip(0, 200, 0, 80)
+ abline(h=0, col=6, lty=2)
+ legend(0, 80, lty=1, lwd=2, col=c(4,6), bg="white",
+        legend=c("rw with drift 0.3", "rw without drift"))
+```
+
+## Signal Plus Noise
+
+-   Many models for generating time series assume an underlying
+    \`\`signal" with some consistent periodic variation contaminated by
+    noise
+
+> -   E.g., consider
+>     $$x_t = 2 \cos\left(2\pi \frac{t+15}{50}\right) + w_t,$$ where the
+>     first term is considered the *signal* and $w_t$ is white noise
+
+## Signal Plus Noise
+
+```{=tex}
+\begin{block}{}
+The sinusoidal waveform {\it signal} 
+$$2 \cos\left(2\pi \frac{t+15}{50}\right)$$
+can be written as: 
+$$A\cos(2\pi\omega t + \phi),$$
+where $A$ is the amplitude, $\omega$ is the frequency of the oscillation, and $\phi$ is the phase shift. 
+\vskip .4cm
+What are the constants $A$, $\omega$, and $\phi$ in this example?
+\end{block}
+```
+
+\pause
+
+Answers: $A = 2$, $\omega = 1/50$, $\phi = 0.6\pi$
+
+
+## Signal Plus Noise
+
+```{r}
+cs = 2*cos(2*pi*(1:500+15)/50)           # same thing 
+w  = rnorm(500,0,1)
+par(mfrow=c(3,1))   
+tsplot(cs, ylab="", col=4, main = expression(x[t]==2*cos(2*pi*t/50+.6*pi)))
+tsplot(cs + w, ylab="", col=4, main = expression(x[t]==2*cos(2*pi*t/50+.6*pi)+N(0,1)))
+tsplot(cs + 5*w, ylab="", col=4, main = expression(x[t]==2*cos(2*pi*t/50+.6*pi)+N(0,25)))
+```
+
+## Signal Plus Noise
+
+-   Using a *signal plus noise* model, the degree to which the signal is
+    obscured depends on the amplitude of the signal relative to the size
+    of $\sigma_w$.
+
+>
+
+> -   The ratio of the amplitude of the signal to $\sigma_w$ (or some
+>     function of the ratio) is sometimes called the *signal-to-noise
+>     ratio (SNR)*
+
+>
+
+> -   The larger the SNR, the easier it is to detect the signal
+
+>
+
+> -   In real time series data, we will likely only see the signal
+>     obscured by noise
+
+## Putting Two Models Together
+
+```{=tex}
+\begin{block}{Exercise 1c.3}
+{\bf 1c.3a} Use a favorite number to set a specific seed for the R random
+number generator and then generate a white noise sequence
+$w_t \sim N(0,1)$ for $t = 1,2,\ldots, 200$.
+
+\vskip .3cm
+
+{\bf 1c.3b} Generate $n = 100$ observations from the autoregression model
+$$x_t = 0.55x_{t-2} + w_t,$$ using the methods we considered in class to
+avoid start-up problems (but skip the first 100 values instead of just
+50).
+
+\vskip .3cm
+
+{\bf 1c.3c} Apply the moving average filter
+$$v_t = (x_t + x_{t-1} + x_{t-2} + x_{t-3})/4,$$ to the $x_t$ data you
+generated. (Notice this a "past-values only" filter.)
+\end{block}
+```
+
+## Putting Two Models Together (continued)
+
+```{=tex}
+\begin{block}{Exercise 1c.3}
+{\bf 1c.3d} On the same graph, plot $x_t$ as a dashed line of one color
+and $v_t$ as a solid line of a different color. Include appropriate
+labels on the axes, a descriptive legend, and a title for your plot.
+
+
+\vskip .5cm
+
+{\bf 1c.3e} What do you observe about the two time series $x_t$ and $v_t$
+in your plot? What are the major features you see in each? How do the
+two series compare?
+\end{block}
+```
