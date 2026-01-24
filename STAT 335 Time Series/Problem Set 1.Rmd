@@ -35,8 +35,8 @@ library(astsa)
 (NROW(sunspots))
 (NROW(sunspotz))
 par(mfrow = c(2,1))
-tsplot(sunspots, col=  "firebrick1")
-tsplot(sunspotz, col= "gold1")
+tsplot(sunspots, col=  "firebrick1", main="sunspots")
+tsplot(sunspotz, col= "blue", main = "sunspotz") 
 ```
 
 The time series plot from the dataset sunspots and sunspotz is plotted above. We can noticed that two plots shows indentical trends, this is due to the fact that the sunpotz is a biannual smoothed version of the sunspots plot. To be exact if $S_t$ is the timeseries for the sunspots data, and $Z_t$ for the sunspotz data, then 
@@ -44,6 +44,13 @@ The time series plot from the dataset sunspots and sunspotz is plotted above. We
 $$Z_t = \frac{1}{12} \sum_{t-6 \leq k \leq t+6} S_k \quad , \quad \forall t \in [1,459]$$
 the domain of $t$ is define such that each $S_t$ denotes a unique month in the data. This is true as we have NROW(sunspotz) = 459. 
 We can easily see that the sunspotz time series is a smoother version of the sunspots for the reasons we explained above.Overall both timeseries illustrates the same underlying long term patterns in their respective time. 
+
+A: 
+1. The sunspots data is much more "jaggy" than the sunspotz data, which makes sense because sunspotz
+is a 12-month moving average of the sunspots dataset.
+2. There is a clear cyclical/oscillatory pattern in both data sets.
+3. There was a dip in the number of sunspots in roughly the 1800-1850s.
+4. The largest number of sunspots was around the 1960s.
 
 
 \textbf{Problem 2}
@@ -60,18 +67,83 @@ To compare the earthquake and explosion signals,
 #(a)
 par(mfrow = c(2, 1))
 
-tsplot(EQ5, type = "l",main = "Earthquake Signal (EQ5)",xlab = "Time Index",ylab = "Amplitude")
-
-tsplot(EXP6, type = "l",main = "Explosion Signal (EXP6)",xlab = "Time Index",ylab = "Amplitude")
+tsplot(eqexp$EQ5,col="red",main="5th Earthquake")
+tsplot(eqexp$EX6,col="blue",main="6th Explosion")
 
 ```
 ```{r}
 #(b)
-tsplot(EQ5, type = "l", main="EQ5 vs EXP6", col = "blue", xlab= "Time Index", ylab = "Amplitude") 
-lines(EXP6, type= "l", col="red", lty = 5)
+tsplot(EQ5, type = "l", main="EQ5 vs EXP6", col = "red", xlab= "Time Index", ylab = "Amplitude") 
+lines(EXP6, type= "l", col="blue", lty = 5)
 legend("topright",
-legend = c("Earthquake (EQ5)", "Explosion (EXP6)"), col = c("blue", "red"),lty = c(1, 5), lwd = c(2,2))
+legend = c("Earthquake (EQ5)", "Explosion (EXP6)"), col = c("red", "blue"),lty = c(1, 5), lwd = c(2,2))
 
 ```
-(c). The 
+```{r}
+ts.plot(ts(eqexp$EQ5), ts(eqexp$EX6), col=c("red","blue"))
+legend("topright", legend=c("EQ5","EX6"), lty=1, col=c("red","blue"))
+```
 
+(c).
+\textbf{Problem 3}
+1.3. In this problem, we explore the difference between random walk and moving
+average models.
+
+(a) Generate and (multifigure) plot nine series that are random walks (see Exam-
+ple 1.10) of length n = 500 without drift ($\delta$ = 0) and $\sigma_w$ = 1.
+
+
+```{r}
+par(mfrow = c(3,3))
+for (i in 1:9){
+  set.seed(i+3)
+  w = rnorm(500); 
+  x = cumsum(w)
+  t = paste("random walk ", i) 
+  tsplot(x, main = t, col = "orange", ylab = "")
+}
+```
+
+
+(b) Generate and (multifigure) plot nine series of length n = 500 that are moving
+averages of the form (1.1) discussed in Example 1.8.
+
+
+```{r}
+par(mfrow = c(3,3)) 
+for (i in 1:9){ 
+  set.seed(2*i)
+  x = rnorm(500); 
+  v = filter(x, sides = 2, filter = rep(1/3, 3));
+  t = paste("moving average", i )
+  tsplot(v, main = t, ylim=c(-3, 3), col="red", ylab= "")
+  
+  
+  }
+```
+
+(c) Comment on the differences between the results of part (a) and part (b).
+
+The moving averages retain the same "shape" as the white noise sequence. The mean is clearly 0 and the
+variance is rather tightly controlled. The random walks take off in different directions, some climbing in an
+upward trend, others going down into the negative values. There’s a lot more variability in the random walk
+series than the moving average ones.
+
+
+```{r}
+w = rnorm(100)
+t = 1:100 
+x = 3*cos(2*pi*t / 4) + w
+v = filter(x, sides = 1 , filter=rep(1/4, 4))
+tsplot(x, main="Signal w/Noise and 4-point Moving Average", ylab="Amplitude", col="blue", lty=2);
+lines(v, col = "red")
+legend("topright", lty = c(2,1), col = c("blue", "red"), bg= "pink", legend = c("x_t", "v_t"))
+```
+(4.c) What do you observe about the two time series xt and vt in your plot? What are the major features
+you see in each? How do the two series compare?
+A few observations:
+• The Signal w/Noise series has a much larger amplitude than the moving average does.
+• The oscillation of the cosine ("signal") is clearly visible, even with the noise (because the amplitude of
+the signal is larger than the variance of the noise).
+• Both series seem to have mean 0.
+• The 4-point moving average seems to smooth out the cosine series a bit too much.
