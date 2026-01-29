@@ -1,0 +1,129 @@
+---
+title: "1/27"
+author: "Ducheng Tan"
+date: "2026-01-27"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(MASS)
+data("PimaIndiansDiabetes")
+library(mlbench)
+
+xy<-PimaIndiansDiabetes
+head(xy)
+
+p <- ncol(xy) -1 
+n <- nrow(xy)
+py <- p+1 
+X<- xy[, -py]
+Y<- xy[, py]
+S <- cov(X)
+S
+
+R <- cor(X)
+R
+
+
+colMeans(X)
+
+table(Y)
+
+barplot(table(Y))
+
+corrplot(R)
+
+X_pos <- X[Y == "pos", ]
+X_neg <- X[Y == "neg", ]
+dim(X_neg)
+dim(X_pos)
+S_pos <- cov(X_pos)
+S_neg <- cov(X_neg)
+Xbar_pos <- colMeans(X_pos)
+Xbar_neg <- colMeans(X_neg)
+
+S_pos
+```
+
+
+
+```{r}
+
+hist(gtemp_land)
+library(moments)
+skewness(gtemp_land)
+```
+
+
+
+```{R}
+
+k <- rep(0,100)
+for (i in 1:100){ 
+  x <- rnorm(3000); 
+  k[i] - kurtosis(x); 
+}
+hist(k)
+summary(k)
+
+```
+
+```{r}
+
+
+data("PimaIndiansDiabetes")
+head(PimaIndiansDiabetes)
+lda.pima <- lda(diabetes~. , data = PimaIndiansDiabetes)
+
+```
+
+The coefficients of linear discriminats shows $\beta_g = \sum ^{-1} \mu_g $
+The group means is $\mu_g = \frac{1}{n_g} \sum _{i<n} I(y_i = g) x_i $
+
+```{r}
+y <- PimaIndiansDiabetes$diabetes
+predict(lda.pima, PimaIndiansDiabetes[,-9])
+
+```
+```{r}
+View(PimaIndiansDiabetes)
+y.hat.lda <- predict(lda.pima, PimaIndiansDiabetes[,-9]$diabetes)
+table(y,y.hat.lda)
+```
+
+```{r}
+qda.pima <- qda(diabetes~. , data = PimaIndiansDiabetes)
+y.hat.qda <- predict(qda.pima, PimaIndiansDiabetes[,-9]$class)
+table(y, y.hat.qda)
+```
+
+
+```{r}
+
+library(kernlab)
+qda.spam <-qda(type~. , data= spam)
+lda.spam <lda(type~., data = spam)
+naive.spam <- e1071::naiveBayes(type~., data= spam)
+
+y.spam<-spam$type
+y.spam.hat.lda <- predict(lda.spam, spam[,-58])$class 
+y.spam.hat.qda <- predict(qda.spam, spam[,-58])$class 
+y.spam.hat.naive <- predict(naive.spam, spam[,-58]), type = "class") 
+
+
+
+```
+
+
+
+

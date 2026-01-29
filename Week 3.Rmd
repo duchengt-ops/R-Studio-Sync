@@ -1,0 +1,87 @@
+---
+title: "Week 3"
+author: "Ducheng Tan"
+date: "2026-01-27"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(astsa)
+hist(gtemp_land)
+library(moments)
+skewness(gtemp_land)
+```
+
+```{R}
+
+k <- rep(0,100)
+for (i in 1:100){ 
+  x <- rnorm(3000); 
+  k[i] - kurtosis(x); 
+}
+hist(k)
+summary(k)
+
+```
+```{r}
+ 
+cov(gtemp_land, gtemp_land)
+cor(gtemp_land, gtemp_land)
+
+cov(gtemp_land, gtemp_ocean)
+cor(gtemp_land, gtemp_ocean)
+plot(gtemp_land, gtemp_ocean)
+
+x1 <- rnorm(500)
+x2 <- rnorm(500)
+plot(x1, x2)
+```
+
+```{r}
+install.packages("readxl") # only if not installed
+install.packages("tidyr") # for reshaping
+library(readxl)
+library(tidyr)
+# session > Set Working Directory > Choose
+Directory...
+data <- read_excel("Lec4_LambDiet_data.xlsx",
+sheet = 1)
+head(data)
+#ANOVA in R wants one response column +
+one factor column.
+diet_long <- pivot_longer(
+data,
+cols = everything(),
+names_to = "diet",
+values_to = "value")
+# remove missing values
+diet_long <- na.omit(diet_long)
+diet_long
+# boxplots
+boxplot(value ~ diet,
+data = diet_long,
+xlab = "diet",
+ylab = "weight gain",
+main = "Side-by-Side Boxplot")
+means <- tapply(diet_long$value, diet_long$diet, mean)
+points(seq_along(means), means,
+pch = 18, col = "red", cex = 1.5)
+#ANOVA analysis
+anova_model <- aov(value ~ diet, data = diet_long)
+summary(anova_model)
+#residual analysis
+par(mfrow = c(2, 2))
+plot(anova_model)
+# bartlett's test for equal variance
+bartlett.test(value ~ diet, data = diet_long)
+# levene's test
+library(car)
+leveneTest(value ~ diet, data = diet_long)
+
+```
+
