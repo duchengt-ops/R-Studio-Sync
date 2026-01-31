@@ -1,0 +1,53 @@
+---
+title: "STAT 406 Computations"
+author: "Ducheng Tan"
+date: "2026-01-31"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+
+a_book = (qf(0.95, 10,5))
+1/a_book
+
+a_me = qf(0.05,5, 10)
+a_me
+
+b_book = qf(0.95, 5, 10)
+b_book
+
+p_a= pf(a_me, 5, 10)
+p_b = pf(b_book, 5, 10)
+p_b - p_a
+
+par(mfrow = c(1,2))
+
+x = seq(0, 10, 0.001); plot(df(x,10,5)~x, ylab="F(r_1 = 10, r_2 = 5)", xlab = "x", main = "F(r_1 = 10, r_2 = 5)", col= "orange")
+
+y = seq(0, 10, 0.001); plot(df(1/y ,5, 10)*(1/y^2) ~ y, ylab="X ~ F(r_1 = 5, r_2 = 10)", xlab = "x", main = "1/X ~ F(r_1 = 5, r_2 = 10)", col= "red")
+
+```
+
+```{r}
+y = seq(0.01, 10, 0.01)
+plot(df(y, 10, 5) ~ y, type="l", 
+     ylab="Density", xlab="F", 
+     main="F ~ F(5, 10)", 
+     col="blue", lwd=2)
+
+# 1/F distribution: transform with Jacobian
+# If Y = 1/F, then f_Y(y) = f_F(1/y) * |dF/dY| = f_F(1/y) * (1/y^2)
+y = seq(0.01, 10, 0.01)
+density_1_over_F = df(1/y, 5, 10) * (1/y^2)
+plot(density_1_over_F ~ y, type="l", 
+     ylab="Density", xlab="1/F", 
+     main="1/F where F ~ F(5, 10)", 
+     col="red", lwd=2)
+```
+
