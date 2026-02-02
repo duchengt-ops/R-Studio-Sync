@@ -1,5 +1,120 @@
 ---
 title: "Problem Set 2"
-output: html_document
+author: "Ducheng Tan"
+date: "2026-02-1"
+output: pdf_document
 ---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+Problem 5 
+```{r}
+#5a. 
+library(astsa)
+library(xts)
+library(stats)
+
+plot(gtemp_land, col= "blue")
+
+
+```
+I believed that gtemp_land data is non stationary because the expected mean for any time is not the around the same. Also the $cov(x_t, x_s)$ is not constant. 
+
+```{r}
+tsplot(cbind(gtemp_land,gtemp_ocean), spaghetti=TRUE, col = astsa.col(c(2,4), .5),
+lwd=2, type="o", pch=20, ylab="Temperature Deviations")
+legend("topleft", col=c(2,4), lty=1, lwd=2, pch=20, bg="white",
+legend=c("Land Surface", "Sea Surface"))
+
+```
+
+Remark : 
+Definition 2.13. A stationary time series is a finite variance process where
+(i) the mean value function, $\mu_t$ defined in (2.1) is constant and does not depend on
+
+time t, and
+(ii) the autocovariance function, $\gamma(s, t)$, defined in (2.2) depends on times $s$ and $t$
+only through their time difference.
+
+
+5b 
+
+```{r}
+
+
+
+plot(djia$Close)
+
+```
+This again is clearly not stationary as there is no constant  mean and the autocvariance does not appear to only depend on time difference. (Lag)
+
+
+5c
+
+```{r}
+ 
+x <-rnorm(1000, 5, 6)
+plot(x, type = "l" , col = "gold")
+
+```
+This is stationary as the mean stays constant around 0, the autocovariance is only dependent on the difference in time. 
+Problem 6 
+
+6a. 
+
+
+$$x_t = \mu + w_t + \theta w_{t-1}, \quad  w_t \sim wn(0, \sigma_w ^2 ) $$
+We have $\mathbf{E}(x_t) = \mathbf{E}( w_t + \theta w_{t-1}) = \mu $
+
+6b. Done by hand
+6c. 6d. 6e.   
+
+Problem 7 
+
+
+7a.
+
+```{r}
+set.seed(1114)
+w <- rnorm(500) 
+v = filter(w, side = 2, rep(1/3, 3))
+plot(v, col = "orange")
+
+acf = acf(v, lag.max = 20, plot = TRUE, na.action = na.pass) 
+acf
+
+
+```
+
+```{r}
+
+j = rnorm(50)
+
+k = filter(j, rep(1/3, 3), sides = 2)
+plot(k, col = "red")
+
+acf_k = acf(k, na.action = na.pass)
+acf_k 
+
+
+```
+
+
+
+
+
+
+```{r}
+ w = rnorm(50)
+v = filter(w, filter=rep(1/3,3), sides=2)
+(acf(v, 20, na.action=na.pass))
+```
+
+
+
 
