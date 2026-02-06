@@ -47,7 +47,7 @@ head(data_2)
 str(data)
 head(data)
 
-View(data)
+#View(data)
 ```
 
 
@@ -118,13 +118,11 @@ $$
 ```{r}
 par(mfrow = c(2,2))
 plot(anova_model)
-
-
 resi <- residuals(anova_model)
 shapiro.test(resi)
 hist(resi)
 ```
-We comment that the residual histogram seems to be not normal due to small sample size of $N=12$, but the QQ-plot of the residuals aligns with the Gaussian distribution. Then lastly, we can see that a numeric test using Shapiro Wilk conveys that we don't have significant evidence to reject $H_0$ (The residuals are normally distributed). $P=0.5394  >> \alpha = 0.05 $. 
+We comment that the residual histogram seems very normal, and the QQ-plot of the residuals aligns with the Gaussian distribution. Then lastly, we can see that a numeric test using Shapiro Wilk conveys that we don't have significant evidence to reject $H_0$ (The residuals are normally distributed). $P=0.5394  >> \alpha = 0.05 $. 
 
 
 
