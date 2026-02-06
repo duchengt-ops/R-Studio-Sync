@@ -1,0 +1,35 @@
+---
+title: "STAT 325 - Design of Experiment Homework 3"
+author: "Ducheng Tan"
+date: "2026-02-1"
+output: pdf_document
+---
+
+
+\textbf{Question 1}
+
+
+P-value calculation 
+```{r}
+
+p_value <- 1 - pf(4.3063, df1 = 4, df2 = 60)
+p_value
+```
+
+
+\textbf{Question 3} 
+
+```{r}
+
+data <- data.frame(diet = c(1, 1, 1,
+           2, 2, 2, 2, 2,
+           3, 3, 3, 3), 
+           
+WeightGain = c(8, 16, 9,
+                 9, 16, 21, 11, 18,
+                 15, 10, 17, 6)
+)
+
+str(data)
+```
+
