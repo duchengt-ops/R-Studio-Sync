@@ -77,11 +77,9 @@ boxplot(WeightGain ~ diet, data = data,
 
 \textit{Although from basic descriptive summary statistics we can see that the mean weight gains of the three diets are not the same but that can be due to small sampling variation, we can also perform One-Way ANOVA to analyze the mean.}
 
-$$ 
-H_0: \mu_1 = \mu_2= \mu_3 \\
-H_a: H_0 \text{ is false }
+$$ H_0: \mu_1 = \mu_2= \mu_3$$
+$$H_a: H_0 \text{ is false }$$
 
-$$
 \textit{From the ANOVA table we can see that the P value $Pr(>F) = 0.491 >> \alpha = 0.05$ , this $P$ value is greater than any statistically significant level, thus we can say that there is no statistical evidence to reject $H_0$. In this context, there is insufficient statistical evidence to conclude that the mean weights gains in goats differ among the three diets.}
 
 ```{r}
@@ -100,20 +98,19 @@ Since the one-way ANOVA failed to reject the null hypothesis, there is no statis
 
 In our model assumptions for using ANOVA we have 
 \begin{itemize}
-\item - Independent Observations 
+\item Independent Observations 
 \item Errors are normally distributed 
 \item Constant Variance 
 \end{itemize}
 
 For independent observations we can assume the errors are independent across the lambs due to the design so 
-$$ \varepsilon_{ij} \neq \varepsilon_{i'j'}, \quad (i , j) \neq (i' ,j') $$
+$$\varepsilon_{ij} \neq \varepsilon_{i'j'}, \quad (i , j) \neq (i' ,j')$$
 We check normality with histogram of residuals, Shapiro-Wilk Test, and Normal probability plot/ QQ plot. 
 With Shapiro-Wilk test we have the hypothesis as 
 
-$$
- H_0: \text{Residuals are normally distributed} \\
- H_a : \text{Residuals are not normally distributed }
-$$
+$$H_0: \text{Residuals are normally distributed}$$
+
+$$H_a : \text{Residuals are not normally distributed }$$
 
 ```{r}
 par(mfrow = c(2,2))
@@ -122,7 +119,7 @@ resi <- residuals(anova_model)
 shapiro.test(resi)
 hist(resi)
 ```
-We comment that the residual histogram seems very normal, and the QQ-plot of the residuals aligns with the Gaussian distribution. Then lastly, we can see that a numeric test using Shapiro Wilk conveys that we don't have significant evidence to reject $H_0$ (The residuals are normally distributed). $P=0.5394  >> \alpha = 0.05 $. 
+We comment that the residual histogram seems not to be normal due to small smaple size of $N=12$ in the data, but the QQ-plot of the residuals aligns with the Gaussian distribution. Then lastly, we can see that a numeric test using Shapiro Wilk conveys that we don't have significant evidence to reject $H_0$ (The residuals are normally distributed). $P=0.5394>>\alpha = 0.05$. 
 
 
 

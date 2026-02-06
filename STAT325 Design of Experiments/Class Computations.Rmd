@@ -1,0 +1,40 @@
+---
+title: "STAT 325 Computations"
+author: "Ducheng Tan"
+date: "2026-01-22"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+data = c(35, 42, 33, 26, 18, 38, 28, 23, 29, 24)
+n = 10
+alpha =0.05 
+df = n -1
+s = sd(data)
+(U_chisq_cvalue = qchisq(1-alpha/2, df ))
+(L_chisq_cvalue = qchisq(alpha/2, df))
+Upper = (n-1)*s^2/L_chisq_cvalue
+Lower = (n-1)*s^2/U_chisq_cvalue
+Upper
+Lower 
+sqrt(Lower)
+sqrt(Upper)
+
+```
+
+```{r}
+n1=126
+n2=126 
+x1_bar= 29.2
+x2_bar= 18.2 
+s1 = 7.5 
+s2 = 5.8 
+
+```
+
