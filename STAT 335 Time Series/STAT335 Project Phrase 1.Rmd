@@ -1,0 +1,38 @@
+---
+title: "STAT 335 Project Phrase 1"
+author: "Ducheng Tan"
+date: "2026-02-10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+data <- read.csv("C:/Users/Ducheng Tan/R-Studio-Sync/STAT 335 Time Series/time_series_US_20210201-0000_20260210-1557.csv")
+
+names(data)[names(data) == "S.P.500"] <- "SP500"
+bitcoin_ts <- ts(data$Bitcoin, start = c(2021, 2), frequency = 12)
+sp500_ts <- ts(data$SP500, start = c(2021, 2), frequency = 12)
+taco_ts <- ts(data$Taco, start = c(2021, 2), frequency = 12)
+
+par(mfrow=c(2,2))
+
+plot.ts(bitcoin_ts, main = "Bitcoin", col = "blue",ylab="Search Interest", lwd = 2)
+plot.ts(sp500_ts, main = "S&P 500", col = "red", ylab="Search Interest", lwd = 2)
+plot.ts(taco_ts, main = "Taco", col = "orange",ylab="Search Interest", lwd = 2)
+
+
+ts.plot(bitcoin_ts, sp500_ts, taco_ts,
+        col = c("blue", "red", "orange"),
+        lwd = 2,
+        main = "Combined Time Series",
+        ylab = "Search Interest")
+legend("topright", 
+       legend = c("Bitcoin", "S&P 500", "Taco"),
+       col = c("blue", "red", "orange"),
+       lty = 1, lwd = 2)
+```
+
