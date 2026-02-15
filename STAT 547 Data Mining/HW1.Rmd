@@ -5,9 +5,12 @@ date: "2026-02-12"
 output: pdf_document
 ---
 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+\section*{Computations and Plotting}
+
 
 ```{r}
 
@@ -63,4 +66,116 @@ ggplot(df, aes(x = k)) +
   theme(legend.position = "bottom")
 ```
 
+
+```{r}
+ 
+
+library(rgl) 
+library(heplots)
+library(candisc)
+library(kknn)
+# TODO: Fit k-NN models for k = 1, 5, 10, 20, 50, 100
+# Hint: use the ‘kknn‘ package or ‘FNN::knn.reg()‘
+```
+
+
+
+
+```{R}
+
+demonstrate_knn_tradeoff <- function() {
+set.seed(747)
+n <- 100
+
+x <- runif(n, 0, 2*pi)
+y <- sin(x) + rnorm(n, sd=0.3)
+test_x <- seq(0, 2*pi, length.out=100)
+true_y <- sin(test_x)
+
+train_df <- data.frame(x = x, y = y)
+test_df  <- data.frame(x = test_x)
+
+k_values <- c(1, 5, 10, 20, 50, 100)
+par(mfrow = c(1,2))
+for (k in k_values) {
+  fit <- kknn(y ~ x,
+              train = train_df,
+              test  = test_df,
+              k     = k,
+              kernel = "rectangular")
+  plot(x, y, main = paste("k =", k), xlab = "x", ylab = "y", pch = 19,col = "purple")
+  
+  # True function
+  lines(test_x, true_y, lwd = 2, col = "gold")
+  
+  # k-NN prediction
+  lines(test_x, fit$fitted.values, lwd = 2, lty = 2, col="black")
+}
+
+
+}
+
+demonstrate_knn_tradeoff()
+
+```
+
+
+
+```{r}
+
+library(MASS)
+contrast_models <- function() {
+  set.seed(747)
+# Generate data from two Gaussian classes with SOME overlap
+  n <- 1000
+  class_1 <- MASS::mvrnorm(n, mu = c(0,0), Sigma = matrix(c(1, 0.5, 0.5, 1), 2))
+  class_2 <- MASS::mvrnorm(n, mu = c(1.5,1.5), Sigma = matrix(c(1, 0.5, 0.5, 1), 2))
+  data <- data.frame(rbind(class_1, class_2), class = factor(rep(c(1,2), each=n)))
+  names(data) <- c("X1", "X2", "Class")
+  #View(data) #to get a real sense of the data 
+# Create a grid for plotting decision boundaries
+  grid <- expand.grid(X1 = seq(-3, 4.5, length=100), X2 = seq(-3, 4.5, length=100))
+  knn_fit <- kknn(Class ~ X1 + X2, train = data, test = grid, k = 100, kernel = "rectangular")
+  grid$knn_pred <- fitted(knn_fit)
+# TODO: Fit a k-NN model (e.g., k=5) and predict on the grid
+# TODO: Fit a Linear Discriminant Analysis (LDA) model (special case of GDA) and predict on the grid
+# TODO: Plot the data points and the decision boundary for each model
+# Use contour plots or colored grids to show the predicted class regions
+# TODO: Write a comment: How do the decision boundaries differ?
+# Which model’s assumption is more correct for this data? How can you tell?
+  
+  lda_fit <- lda(Class ~ X1 + X2, data = data)
+  grid$lda_pred <- predict(lda_fit, newdata = grid)$class
+
+  par(mfrow = c(1, 2))
+  
+  #kNN plot
+  plot(data$X1, data$X2, col = c("orange", "forestgreen")[as.numeric(data$Class)], 
+       pch = 19, main = "5-NN Decision Boundary",
+       xlab = "X1", ylab = "X2", xlim = c(-3, 4.5), ylim = c(-3, 4.5))
+  contour(x = seq(-3, 4.5, length=100), y = seq(-3, 4.5, length=100),
+          z = matrix(as.numeric(grid$knn_pred), 100, 100),
+          levels = c(1.5), add = TRUE, lwd = 2, drawlabels = FALSE)
+  legend("topleft", legend = c("Class 1", "Class 2"), col = c("orange", "forestgreen"), pch = 19)
+  
+  #LDA plot
+  plot(data$X1, data$X2, col = c("orange", "forestgreen")[as.numeric(data$Class)], 
+       pch = 19, main = "LDA Decision Boundary",
+       xlab = "X1", ylab = "X2", xlim = c(-3, 4.5), ylim = c(-3, 4.5))
+  contour(x = seq(-3, 4.5, length=100), y = seq(-3, 4.5, length=100),
+          z = matrix(as.numeric(grid$lda_pred), 100, 100),
+          levels = c(1.5), add = TRUE, lwd = 2, drawlabels = FALSE)
+  legend("topleft", legend = c("Class 1", "Class 2"), col = c("orange", "forestgreen"), pch = 19)
+  
+  par(mfrow = c(1, 1))
+  
+  
+  
+}
+
+contrast_models()
+
+
+
+```
 
