@@ -127,7 +127,7 @@ library(MASS)
 contrast_models <- function() {
   set.seed(747)
 # Generate data from two Gaussian classes with SOME overlap
-  n <- 1000
+  n <- 100
   class_1 <- MASS::mvrnorm(n, mu = c(0,0), Sigma = matrix(c(1, 0.5, 0.5, 1), 2))
   class_2 <- MASS::mvrnorm(n, mu = c(1.5,1.5), Sigma = matrix(c(1, 0.5, 0.5, 1), 2))
   data <- data.frame(rbind(class_1, class_2), class = factor(rep(c(1,2), each=n)))
@@ -135,7 +135,7 @@ contrast_models <- function() {
   #View(data) #to get a real sense of the data 
 # Create a grid for plotting decision boundaries
   grid <- expand.grid(X1 = seq(-3, 4.5, length=100), X2 = seq(-3, 4.5, length=100))
-  knn_fit <- kknn(Class ~ X1 + X2, train = data, test = grid, k = 100, kernel = "rectangular")
+  knn_fit <- kknn(Class ~ X1 + X2, train = data, test = grid, k = 5, kernel = "rectangular")
   grid$knn_pred <- fitted(knn_fit)
 # TODO: Fit a k-NN model (e.g., k=5) and predict on the grid
 # TODO: Fit a Linear Discriminant Analysis (LDA) model (special case of GDA) and predict on the grid
