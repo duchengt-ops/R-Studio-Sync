@@ -1,0 +1,85 @@
+---
+title: "Sample Size Computations"
+author: "Ducheng Tan"
+date: "2026-02-19"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(pwr)
+
+find_sample_size <- function(means, sigma2, alpha = 0.05, target_power = 0.90) {
+  
+  a <- length(means)
+  
+  
+  mu_bar <- mean(means)
+  
+ 
+  tau <- means - mu_bar
+  
+
+  sum_tau2 <- sum(tau^2)
+  
+  max_diff <- max(means) - min(means)
+  
+  cat("=== Input Summary ===\n")
+  cat("Number of groups (a):          ", a, "\n")
+  cat("Group means:                   ", means, "\n")
+  cat("Overall mean:                  ", mu_bar, "\n")
+  cat("Treatment effects (tau_i):     ", tau, "\n")
+  cat("Sum of squared effects:        ", sum_tau2, "\n")
+  cat("Maximum difference:            ", max_diff, "\n")
+  cat("Error variance (sigma^2):      ", sigma2, "\n")
+  cat("Alpha:                         ", alpha, "\n")
+  cat("Target power:                  ", target_power, "\n")
+  cat("\n=== Searching for n ===\n")
+  
+
+for (n in 2:200) {
+    
+    
+    phi2 <- (n * sum_tau2) / (a * sigma2)
+    phi  <- sqrt(phi2)
+    
+  
+    df1 <- a - 1          
+    df2 <- a * (n - 1)    
+    N   <- a * n          
+    
+
+    F_crit <- qf(1 - alpha, df1, df2)
+    
+    ncp   <- (n * sum_tau2) / sigma2
+    power <- pf(F_crit, df1, df2, ncp = ncp, lower.tail = FALSE)
+    
+    cat(sprintf("n = %3d | Phi^2 = %6.3f | Phi = %5.3f | df2 = %3d | Power = %.4f\n",
+                n, phi2, phi, df2, power))
+    
+    if (power >= target_power) {
+      cat("\n=== Result ===\n")
+      cat("Required sample size per group: n =", n, "\n")
+      cat("Total observations needed:      N =", N, "\n")
+      cat("Achieved power:                    ", round(power, 4), "\n")
+      cat("Phi^2:                             ", round(phi2, 4), "\n")
+      cat("Phi:                               ", round(phi,  4), "\n")
+      return(invisible(list(n = n, N = N, power = power, 
+                            phi2 = phi2, phi = phi,
+                            df1 = df1, df2 = df2)))
+    }
+  }
+  cat("No Solution for this power level")
+}
+means         <- c(50, 60, 50, 60)
+sigma2        <- 25
+alpha         <- 0.05
+target_power  <- 0.90
+
+result <- find_sample_size(means, sigma2, alpha, target_power)
+```
+
