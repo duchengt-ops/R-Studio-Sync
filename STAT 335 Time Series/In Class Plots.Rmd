@@ -1,0 +1,48 @@
+---
+title: "Class Plots"
+author: "Ducheng Tan"
+date: "2026-02-19"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+library(astsa)
+
+```
+
+
+```{r}
+
+tsplot(diff(gtemp_land), main = "differenced global temperature ")
+
+acf(diff(gtemp_land), col = "orange")[-(0:1)]
+
+(mean(diff(gtemp_land)))
+```
+
+
+
+```{r}
+
+
+mean(window(diff(gtemp_land), start=1980))
+```
+
+
+```{r}
+lag1.plot(soi, 12, col = "dodgerblue")
+```
+
+
+```{r}
+ 
+lag2.plot(soi, rec, 8, col= "dodgerblue")
+```
+
+

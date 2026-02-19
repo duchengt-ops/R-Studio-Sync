@@ -1,0 +1,526 @@
+---
+title: "STAT 335, **Unit 3**: Time Series Regression and Exploratory Data Analysis"
+subtitle: "**(Part b): Ordinary Least Squares Regression for Time Series**"
+author: "Dr. Mary Lynn Reed"
+date: ""
+theme: "Warsaw"
+colortheme: "wolverine"
+fontsize: 10pt
+output: beamer_presentation
+header-includes:
+  - \usefonttheme{serif}
+  - \newtheorem{prop}{Proposition}
+  - \newtheorem{thm}{Theorem}
+  - \newtheorem{cor}{Corollary}
+  - \newtheorem{exer}{Exercise}
+  - \setbeamertemplate{footline}[frame number]
+  - \usepackage{setspace}
+  - \newcommand{\R}{\mathbb{R}}
+  - \newcommand{\var}{\text{var}}
+  - \newcommand{\cov}{\text{cov}}
+  - \newcommand{\corr}{\text{corr}}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(xts)
+library(astsa)
+```
+
+## Regression for Time Series
+
+We want to look at the situation where a time series, say, $x_t$, for $t = 1, \ldots, n,$ is possibly being influenced by a collection of other time series, say
+$$z_{t1}, z_{t2}, \ldots, z_{tq}.$$
+These independent time series are called **exogenous variables** (since they are ``external" to the series $x_t$).
+
+>
+
+\only<2->{
+So, we're looking at a {\it linear regression model} of: 
+$$x_t = \beta_0 + \beta_1 z_{t1} + \beta_2 z_{t2} + \cdots + \beta_q z_{tq} + w_t,$$
+where the $\beta_0, \beta_1, \ldots, \beta_q$ are unknown fixed regression coefficients and $w_t$ is a white noise time series with variance $\sigma_w^2$.
+}
+
+
+## Example: Estimating the Linear Trend of a Commodity
+
+In the **astsa** package is a dataset **salmon** that contains the monthly export price of farm bred Norweigian salmon, from September 2003 to June 2017, in US dollars per kilogram.
+
+```{r, out.height="70%", out.width="70%", fig.align="center"}
+tsplot(salmon, main="Export Price of Salmon", ylab="USD per kg")
+```
+
+
+## Example: Estimating the Linear Trend of a Commodity
+
+We want to estimate the *linear trend* of this time series by doing a linear regression on this data and finding the best fit line.
+
+I.e., we'll fit the model:
+$$x_t = \beta_0 + \beta_1 z_t + w_t,$$
+where: 
+
+- $w_t$ is the error term, which we will assume is modeled by white noise (may not be accurate but we will assume for now)
+
+- $z_t$ will be time, measured in months, since the $x_t$ series is given in monthly increments
+
+
+## Example: Estimating the Linear Trend of a Commodity
+
+Let's look at the **salmon** time series data set
+
+\begin{block}{Exercise 3b.1}
+Make sure the {\tt astsa} package is loaded and then do the following commands to look at the {\tt salmon} dataset:
+\vskip .3cm
+{\tt salmon}
+\vskip .3cm
+{\tt time(salmon)}
+\vskip .3cm
+Given what you see, what are the values for $x_1$ and $z_1$?
+\end{block}
+
+## Example: Estimating the Linear Trend of a Commodity
+
+Now, we'll perform linear regression using the R command **lm()**.
+
+```{r}
+summary(fit <- lm(salmon ~ time(salmon)))
+```
+
+## Example: Estimating the Linear Trend of a Commodity
+
+```{r}
+fit <- lm(salmon ~ time(salmon))
+tsplot(salmon, col=4, ylab="USD per KG", main="Salmon Export Price")
+abline(fit,col="red")
+```
+
+## Example: Estimating the Linear Trend of a Commodity
+
+What's the equation of the regression line we fit?
+```{r}
+(fit <- lm(salmon ~ time(salmon)))
+```
+
+So, the ordinary least squares "best fit" regression line is:
+$$x_t = -503.0895 + 0.2529 z_t$$
+
+
+## Example: Estimating the Linear Trend of a Commodity
+
+How good was the assumption that the error term is modeled as white noise? Let's look at the residuals...
+
+```{r, out.height="80%"}
+fit <- lm(salmon ~ time(salmon))
+par(mfrow=c(1,2))
+plot(resid(fit))
+qqnorm(resid(fit))
+```
+
+## Back to the General Situation...Multiple Regression for Time Series
+
+Suppose $x_t$ is a time series and we're fitting the *linear regression model*
+$$x_t = \beta_0 + \beta_1 z_{t1} + \beta_2 z_{t2} + \cdots + \beta_q z_{tq} + w_t$$
+
+where $z_{t1}, z_{t2}, \ldots, z_{tq}$ are independent variables and $\{ w_t \}$ is the error term, which we assume is white noise with variance $\sigma_w^2$.
+
+>
+
+\only<2->{
+Ordinary least squares (OLS) regression finds the regression coefficients $\beta_0, \beta_1, \ldots, \beta_q$ that minimize the error sum of squares:
+$$S = \sum_{t=1}^n w_t^2 = \sum_{t=1}^n (x_t - [\beta_0 + \beta_1 z_{t1} + \beta_2 z_{t2} + \cdots + \beta_q z_{tq}])^2$$
+}
+
+## Multiple Regression for Time Series
+
+The minimized error sum of squares is: 
+$$\text{SSE} = \sum_{t=1}^n (x_t - \hat{x_t})^2,$$
+where $\hat{x_t} = \hat{\beta_0} + \hat{\beta_1} z_{t1} + \hat{\beta_2} z_{t2} + \cdots + \hat{\beta_q} z_{tq}$ and $\hat{\beta_i}$ is the (OLS) regression estimate of $\beta_i$. 
+
+>
+
+An unbiased estimator for the variance parameter $\sigma_w^2$ is: 
+$$s_w^2 = \text{MSE} = \frac{\text{SSE}}{n - (q+1)},$$
+where MSE denotes the **mean square error**.
+
+## Standard Error of the Regression Coefficients
+
+We denote the standard error for the estimated regression coefficient $\hat{\beta_i}$ as: $\text{se}(\hat{\beta_i})$. If the errors are normal, the statistic
+$$t = \frac{\hat{\beta_i} - \beta_i}{\text{se}(\hat{\beta_i})}$$
+will follow a $t$-distribution with $n - (q+1)$ degrees of freedom. 
+
+>
+
+**Why do we care?** Because this can be used to do hypothesis testing on whether the regression coefficient $\beta_i$ is 0...which will tell us whether the corresponding independent variable $z_{ti}$ is really needed in the model.
+
+## Hypothesis Testing to Select Best Subset of Independent Variables
+
+Suppose a proposed model specifies that only a subset $r < q$ independent variables, say
+$$\{ z_{t1}, z_{t2}, \ldots, z_{tr}\}$$
+is influencing the dependent variable $x_t$. 
+
+>
+
+So we want to devise a test to see if this reduced model
+$$x_t = \beta_0 + \beta_1 z_{t1} + \beta_2 z_{t2} + \cdots \beta_r z_{tr} + w_t$$ is adequate.
+
+>
+
+So, we want to do a hyptothesis test against the full model, where the null hypothesis is:
+$$H_0 : \beta_{r+1} = \cdots = \beta_q = 0.$$
+
+## Hypothesis Testing to Select Best Subset of Independent Variables
+
+The statistic we use for our hyptothesis test is the $F$-statistic:
+$$F = \frac{(\text{SSE}_r - \text{SSE})/(q-r)}{\text{SSE}/(n-q-1)} = \frac{\text{MSR}}{\text{MSE}}$$
+where $\text{SSE}_r$ is the error sum of squares under the reduced model and the other error statistics are for the full model.
+
+
+\only<2->{If the null hypthothesis $$H_0 : \beta_{r+1} = \cdots = \beta_q = 0$$ is true, then $\text{SSE}_r \approx \text{SSE}$. Under this hyptothesis, the $F$-statistic has a central $F$-distribution with $q-r$ and $n-q-1$ degrees of freedom. }
+
+\only<3->{
+The hull hypothesis is rejected at level $\alpha$ if $F > F_{n-q-1}^{q-r}(\alpha)$, the $(1-\alpha)$ percentile of the $F$-distribution with $q-r$ numerator and $n-q-1$ denominator degrees of freedom.
+}
+
+## Special Case
+
+A special case of interest is 
+$$H_0 = \beta_1 = \cdots = \beta_q = 0.$$
+In this case the reduced model becomes
+$$x_t = \beta_0 + w_t.$$
+The residual sum of squares under this reduced model is:
+$$\text{SSE}_0 = \sum_{t=1}^n (x_t - \bar{x})^2$$
+and $\text{SSE}_0$ is often called $\text{SST}$ (*adjusted total sum of squares*).
+
+
+Recall from our Regression Refresher that $$R^2 = 1 - \frac{\text{SSE}}{\text{SST}}$$ is the **coefficient of determination**. This measures the proportion of variation accounted for by all the variables (in the original model).
+
+## Stepwise Regression
+
+- In statistical modeling, in general, we always seek to find the most *accurate* model with the least amount of *complexity*. This follows the principle of *parsimony* (or *Occam's razor*).
+
+>
+
+- For regression, this means we're looking for the model that has the best fit with the fewest number of parameters. 
+
+>
+
+- We can use the hypothesis testing approach, in a systematic manner, to leave variables out and measure the impact on accuracy and fit. 
+
+## Accuracy and Complexity Measures
+
+- We use the error sum of squares 
+$$\text{SSE} = \sum_{t=1}^n (x_t - \hat{x}_t)^2$$
+to measure **accuracy** of a model since it measures how close the fitted values ($\hat{x}_t$) are to the actual data ($x_t$).
+
+>
+
+- For a normal regression model with $k$ coefficients, we also have the maximum likelihood estimator for the variance as:
+$$\hat{\sigma}_k^2 = \frac{\text{SSE}(k)}{n},$$
+where $\text{SSE}(k)$ indicates the residual sum of squares under the model with $k$ regression coefficients. The **complexity** of the model can be characterized by $k$, the number of parameters in the model.
+
+## Akaike's Information Criteria (AIC)
+
+- Seeking to balance the accuracy of the fit of a model against the number of parameters in the model, we look to the notion of an **information criteria**. Here's one (due to Akaike, 1974):
+
+>
+
+\begin{definition}[Akaike's Information Criterion (AIC)]
+$$\text{AIC} = \log \hat{\sigma}_k^2 + \frac{n+2k}{n}.$$
+\end{definition}
+
+>
+
+- We then note that a *parsimonious model* will be an accurate one (with small error $\hat{\sigma}_k^2$) that is not overly complex (small $k$). So we seek to minimize the AIC to specify the "best" model using this criteria.
+
+>
+
+- Note that "AIC" stands for "An Information Criterion"
+
+
+
+## Other Information Criteria 
+
+- Finding the "right" penalty term in the information criteria is a subject of some debate. So here are a few alternative criteria:
+
+>
+
+\begin{definition}[AIC, Bias Corrected(AICc)]
+$$\text{AICc} = \log \hat{\sigma}_k^2 + \frac{n+k}{n-k-2}.$$
+\end{definition}
+
+>
+
+\begin{definition}[Bayesian Information Criterion, (BIC)]
+$$\text{BIC} = \log \hat{\sigma}_k^2 + \frac{k\log n}{n}.$$
+\end{definition}
+
+The BIC is also called the **Schwarz Information Criterion (SIC).**
+
+- Studies indicate that the BIC does well for large samples while AICc tends to be better for small samples where the relative number of parameters is large.
+
+## Example: Los Angeles Pollution Study, 1970s
+
+```{r}
+par(mfrow=c(3,1))
+tsplot(cmort, main="Cardiovascular Mortality", col=6, type="o", pch=19, ylab="")
+tsplot(tempr, main="Temperature", col=4, type="o", pch=19, ylab="")
+tsplot(part, main="Particulates", col=2, type="o", pch=19, ylab="")
+```
+
+## Example: Los Angeles Pollution Study, 1970s
+
+```{r}
+tsplot(cmort, ylab="", ylim=c(20,130), col=astsa.col(6,.8))
+lines(tempr, col=astsa.col(4,.9))
+lines(part, col=astsa.col(2,.8))
+legend("topright", legend=c("Mortality", "Temperature", "Pollution"), lty=1, lwd=2, col=c(6,4,2), bg="white")
+```
+
+## Example: Los Angeles Pollution Study, 1970s
+
+- These time series are from a study on the possible effects of temperature and pollution on weekly mortality in Los Angeles County during the 1970s
+
+- We notice strong seasonal components in all 3 time series
+
+- There's a slight downward trend in the cardiovascular mortality in the 10 year period
+
+- There appears to be an inverse relationship between mortality and temperature (mortality rate is higher for cooler temperatures; lower for warmer temps)
+
+- There also appears to be a possible direct relationship between particulates (pollution) and mortality
+
+## Example: Los Angeles Pollution Study, 1970s
+
+To investigate further, we look at the correlation between each of the variables in pairs, and plot their scatterplots also.
+
+```{r}
+panel.cor <- function(x, y, ...){
+par(usr = c(0, 1, 0, 1))
+r <- round(cor(x, y), 2)
+text(0.5, 0.5, r, cex = 1.75)
+}
+pairs(cbind(Mortality=cmort, Temperature=tempr, Particulates=part), col=4, lower.panel=panel.cor)
+```
+
+## Example: Los Angeles Pollution Study, 1970s
+
+Observations from this plot...
+
+>
+
+- We see the positive correlation between Mortality and Particulates (pollution); and this correlation looks pretty linear in the scatterplot
+
+>
+
+- We see the negative correlation between Mortality and Temperature; but this correlation does NOT look linear (it curves down and then slightly up again)
+
+>
+
+- Temperature and Particulates are nearly uncorrelated
+
+## Example: Los Angeles Pollution Study, 1970s
+
+Introducing some notation for the 3 different time series:
+
+Let $M_t$ = cardiovascular mortality
+
+Let $T_t$ = temperature
+
+Let $P_t$ = particulate levels
+
+>
+
+We want to try to model $M_t$ using a linear regression. From our analysis so far it seems clear that both $T_t$ and $P_t$ are influencing $M_t$. But we're going to look at several models for comparison.
+
+## Example: Los Angeles Pollution Study, 1970s
+
+Let's think about that non-linearity we saw in the correlation between Mortality and Temperature...
+
+- Because of this we'd like to include a quadratic factor ($T_t^2$) instead of just a linear one ($T_t$).
+
+- But given the temperature range we're looking at, $T_t$ and $T_t^2$ are highly collinear
+
+```{r, echo=TRUE}
+par(mfrow=2:1)
+plot(tempr, tempr^2)
+cor(tempr, tempr^2)
+```
+
+## Example: Los Angeles Pollution Study, 1970s
+
+To fix this, we'll adjust for the mean temperature. 
+
+Let $T_{.}$ denote the mean temperature (which for this data is 74.26)
+
+We'll look at variables ($T_t - T_{.}$) and $(T_t - T_{.})^2$ instead. Note they are NOT collinear in this range:
+
+```{r, echo=TRUE}
+par(mfrow=2:1)
+temp = tempr-mean(tempr)
+plot(temp, temp^2)
+cor(temp,temp^2)
+```
+
+## Example: Los Angeles Pollution Study, 1970s
+
+So, given this, we'll test the following 4 models:
+
+\begin{align}
+M_t &= \beta_0 + \beta_1 t + w_t \\
+M_t &= \beta_0 + \beta_1 t + \beta_2 (T_t - T_{.}) + w_t \\
+M_t &= \beta_0 + \beta_1 t + \beta_2 (T_t - T_{.}) + \beta_3 (T_t - T_{.})^2 + w_t \\
+M_t &= \beta_0 + \beta_1 t + \beta_2 (T_t - T_{.}) + \beta_3 (T_t - T_{.})^2 + \beta_4 P_t + w_t 
+\end{align}
+
+$(1)$ is a trend only model
+
+$(2)$ adds a linear temperature term
+
+$(3)$ includes the curvilinear (quadratic) temperature term
+
+$(4)$ adds the pollution term
+
+## Example: Los Angeles Pollution Study, 1970s
+
+Here some R code to define the different variables...and fit the different models
+
+```{r, echo=TRUE}
+t = time(cmort);          #  time (pure trend)
+Tadj = tempr-mean(tempr); #  (T_t - T_.)  temp adjusted by mean
+Tadj2 = Tadj^2;           #  (T_t - T_.)^2 
+Pt = part;                #  Particulates (pollution)
+#
+#
+fit1 <- lm(cmort ~ t, na.action=NULL)
+fit2 <- lm(cmort ~ t + Tadj, na.action=NULL)
+fit3 <- lm(cmort ~ t + Tadj + Tadj2, na.action=NULL)
+fit4 <- lm(cmort ~ t + Tadj + Tadj2 + Pt, na.action=NULL)
+
+
+summary(fit1)
+summary(fit2)
+summary(fit3)
+summary(fit4)
+
+anova(fit1)
+mean(tempr)
+```
+
+
+## Example: Los Angeles Pollution Study, 1970s
+
+\begin{block}{Exercise 3b.2a}
+Try some of the {\tt lm()} commands and then look at the results using the {\tt summary(fit)} and {\tt anova(fit)}.
+\vskip .6cm
+Note that in the {\tt anova()} output, SSE is the "Sum Sq" of the Residuals and MSE is the "Mean Sq" of the Residuals.
+\end{block}
+
+## Example: Los Angeles Pollution Study, 1970s
+
+R has built-in functions to compute AIC and BIC from the output of an **lm()** command but they differ a bit from the definition of AIC and BIC our book uses. Here's some code that extracts the data and makes the needed adjustment:
+
+```{r, echo=TRUE}
+num = length(cmort);
+t = time(cmort); 
+fit1 <- lm(cmort ~ t, na.action=NULL)
+AIC(fit3)/num - log(2*pi)
+BIC(fit3)/num - log(2*pi)
+```
+
+## Example: Los Angeles Pollution Study, 1970s
+
+\begin{block}{Exercise 3b.2b}
+Using this methodology, compute the AIC and BIC values for the subsequent models we fit. 
+\end{block}
+
+>
+
+Here's a table containing some of the output you should be seeing in your results:
+
+\begin{tabular}{cccccccc} 
+Model & $k$ & SSE & df & MSE & $R^2$ & AIC & BIC \\ \hline
+$(1)$ & 2 & 40,020 & 506 & 79.0 & .21 & 5.38 & 5.40 \\
+$(2)$ & 3 & 31,413 & 505 & 62.2 & .38 & 5.14 & 5.17 \\
+$(3)$ & 4 & 27,985 & 504 & 55.5 & .45 & 5.03 & 5.07 \\
+$(4)$ & 5 & 20,508 & 503 & 40.8 & .60 & 4.72 & 4.77 
+\end{tabular}
+
+## Example: Los Angeles Pollution Study, 1970s
+
+- Examining the table of results we see that model $(4)$ is the "best" since it has the highest $R^2$ with the lowest AIC/BIC values. 
+
+>
+
+- Looking at the output for model $(4)$ we see our "best fit" mortality regression model was:
+
+$$\hat{M}_t = 2831.5 - 1.396t - .472(T_t - 74.26) + 0.023(T_t - 74.26)^2 + .255P_t$$
+
+- Note that:
+
+  - a negative trend is present over time
+
+  - coefficient of adjusted temperature is also negative
+  
+  - pollution is weighted positively (can be interpreted as incremental contribution to daily deaths per unit of particulate pollution)
+  
+## Example: Los Angeles Pollution Study, 1970s
+
+
+
+- An important final note is that we should really be checking the residuals $\hat{w}_t = M_t - \hat{M}_t$, too...
+
+>
+
+- It turns out there is a fair amount of autocorrelation in these particular residuals (i.e., they are not "white"), which is an issue we'll return to later in the course.
+
+>
+
+- Try: **plot(resid(fit4), type="o")** to see a plot of the residuals for the final model.
+
+## Example: Regression with Lagged Variables
+
+Recall our correlation analysis of the SOI (Southern Oscillation Index) vs Recruitment (new fish) which indicated that the SOI at time $t-6$ months was associated/correlated with Recruitment at time $t$. 
+
+We'll dig deeper into this later but for now let's try fitting a naive linear regression model:
+
+$$R_t = \beta_0 + \beta_1 S_{t-6} + w_t.$$
+
+The R library **dynlm** fits dynamic linear models and time series regressions. For lagged regression, the set-up is faster and more intuitive. 
+
+
+```{r}
+par(mfrow = c(1,2))
+plot(resid(fit4), type = "o" )
+plot(resid(fit3), type = "o" )
+```
+
+> 
+
+Perform the commands below to fit the lagged regression for SOI and Recruitment.
+
+```{r, echo=TRUE, results='hide'}
+library(dynlm)
+summary(fit <- dynlm(rec ~ L(soi,6)))
+```
+
+## Example: Regression with Lagged Variables
+
+```{r}
+library(dynlm)
+summary(fit <- dynlm(rec ~ L(soi,6)))
+```
+
+## Example: Regression with Lagged Variables
+
+The resulting fit model is:
+
+$$\hat{R}_t = 65.79 - 44.28S_{t-6}$$
+
+but taking a look at the residuals, there's a bit too much pattern to think this model is "right"... (stay tuned!)
+
+```{r}
+par(mfrow=2:1)
+library(dynlm)
+fit <- dynlm(rec ~ L(soi,6))
+tsplot(resid(fit),col=4)
+```
